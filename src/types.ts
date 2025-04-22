@@ -78,7 +78,7 @@ export interface GenerateFlashcardsCommand {
 export interface FlashcardSuggestionDTO {
   front: string;
   back: string;
-  source: "ai-full"; // generated suggestions have source "ai-full"
+  source: "ai-full" | "ai-edited"; // Allow both ai-full and ai-edited sources
 }
 
 // API response DTO for flashcard generation (POST /api/generate)

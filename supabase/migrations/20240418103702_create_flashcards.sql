@@ -7,7 +7,7 @@ create table flashcards (
     source varchar(10) not null check (source in ('ai-full', 'ai-edited', 'manual')),
     generation_id uuid,
     created_at timestamptz not null default now(),
-    updated_at timestamptz not null default now()
+    updated_at timestamptz
 );
 
 -- Add foreign key constraint for generation_id
