@@ -13,7 +13,7 @@ const generateFlashcardsSchema = z.object({
     .max(15000, "Text must not exceed 15000 characters"),
 });
 
-export const POST: APIRoute = async ({ request }) => {
+export const POST: APIRoute = async ({ request, locals }) => {
   try {
     // Parse and validate request body
     const body = (await request.json()) as GenerateFlashcardsCommand;
@@ -33,7 +33,17 @@ export const POST: APIRoute = async ({ request }) => {
     }
 
     const { text } = validationResult.data;
-    const generationService = new GenerationService();
+
+    // Get API key from environment variables
+    const openRouterApiKey = import.meta.env.OPENROUTER_API_KEY;
+    if (!openRouterApiKey) {
+      throw new Error("OPENROUTER_API_KEY environment variable is not set");
+    }
+
+    const generationService = new GenerationService(locals.supabase, {
+      apiKey: import.meta.env.OPENROUTER_API_KEY,
+    });
+
     const result = await generationService.generateFlashcards(text);
 
     return new Response(JSON.stringify(result), {
@@ -42,9 +52,15 @@ export const POST: APIRoute = async ({ request }) => {
     });
   } catch (error) {
     console.error("Error in generate endpoint:", error);
-    return new Response(JSON.stringify({ error: "Internal server error" }), {
-      status: 500,
-      headers: { "Content-Type": "application/json" },
-    });
+    return new Response(
+      JSON.stringify({
+        error: "Internal server error",
+        message: error instanceof Error ? error.message : "Unknown error",
+      }),
+      {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      }
+    );
   }
 };

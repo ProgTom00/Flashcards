@@ -1,23 +1,57 @@
 import { createHash } from "crypto";
 import type { FlashcardSuggestionDTO, GenerateFlashcardsResponseDTO } from "@/types";
-import { supabaseClient, DEFAULT_USER_ID } from "@/db/supabase.client";
+import { DEFAULT_USER_ID } from "@/db/supabase.client";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/db/database.types";
+import { OpenRouterService } from "@/lib/openrouter.service";
+import { z } from "zod";
+import { Logger } from "@/lib/logger";
+
+// Validation schema for flashcards array
+const flashcardsArraySchema = z.array(
+  z.object({
+    front: z.string(),
+    back: z.string(),
+  })
+);
 
 export class GenerationService {
-  private supabase: SupabaseClient<Database>;
-  private openrouterApiKey: string;
+  private readonly openRouter: OpenRouterService;
+  private readonly model = "openai/gpt-4o-mini";
+  private readonly logger: Logger;
+  private readonly systemMessage = `You are an expert educational content creator specializing in creating high-quality flashcards. 
+Create concise, clear, and accurate flashcards based on the provided text. Each flashcard should:
+- Have a clear question or concept on the front
+- Have a precise and complete answer on the back
+- Be self-contained and understandable without external context
+- Focus on one specific concept or piece of information
+- Use clear, simple language
+Return ONLY a JSON array of flashcard objects with 'front' and 'back' and 'source' properties.`;
 
-  constructor() {
-    this.supabase = supabaseClient;
-    this.openrouterApiKey = process.env.OPENROUTER_API_KEY || "";
+  constructor(
+    private readonly supabase: SupabaseClient<Database>,
+    config?: { apiKey: string }
+  ) {
+    if (!config?.apiKey) {
+      throw new Error("OpenRouter API key is required");
+    }
+
+    this.logger = new Logger("GenerationService");
+    this.openRouter = new OpenRouterService({
+      apiKey: config.apiKey,
+      timeout: 60000,
+      maxRetries: 3,
+    });
   }
 
   async generateFlashcards(text: string): Promise<GenerateFlashcardsResponseDTO> {
     const startTime = Date.now();
+    this.logger.info("Starting flashcard generation", { textLength: text.length });
+
     try {
-      // 1. Call OpenRouter AI service (mock for now)
+      // 1. Call OpenRouter AI service
       const aiSuggestions = await this.callAiService(text);
+      this.logger.info("AI suggestions generated", { count: aiSuggestions.length });
 
       // 2. Create generation record in database
       const sourceTextHash = this.generateTextHash(text);
@@ -34,7 +68,10 @@ export class GenerationService {
         generated_count: aiSuggestions.length,
       };
     } catch (error) {
-      // Log error to generation_logs table
+      this.logger.error("Failed to generate flashcards", error as Error, {
+        textLength: text.length,
+        duration: Date.now() - startTime,
+      });
       await this.logGenerationError(error as Error, text);
       throw error;
     }
@@ -57,7 +94,7 @@ export class GenerationService {
         user_id: DEFAULT_USER_ID,
         duration: duration,
         generated_count: generatedCount,
-        model: "openrouter-default",
+        model: this.model,
         source_text_hash: sourceTextHash,
         source_text_length: sourceText.length,
       })
@@ -65,6 +102,7 @@ export class GenerationService {
       .single();
 
     if (generationError) {
+      this.logger.error("Failed to save generation metadata", new Error(generationError.message));
       throw new Error(`Failed to create generation record: ${generationError.message}`);
     }
 
@@ -72,24 +110,56 @@ export class GenerationService {
   }
 
   private async callAiService(text: string): Promise<FlashcardSuggestionDTO[]> {
-    // Mock implementation based on documentation requirements
-    return [
-      {
-        front: "What is the capital of France?",
-        back: "Paris is the capital of France",
-        source: "ai-full",
-      },
-      {
-        front: "Who wrote 'Romeo and Juliet'?",
-        back: "William Shakespeare wrote 'Romeo and Juliet'",
-        source: "ai-full",
-      },
-      {
-        front: "What is photosynthesis?",
-        back: "The process by which plants convert light energy into chemical energy",
-        source: "ai-full",
-      },
-    ];
+    try {
+      this.openRouter.setSystemMessage(this.systemMessage);
+      this.openRouter.setModel(this.model);
+
+      this.openRouter.setResponseFormat({
+        name: "flashcards",
+        schema: {
+          type: "object",
+          properties: {
+            flashcards: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  front: { type: "string" },
+                  back: { type: "string" },
+                },
+                required: ["front", "back"],
+              },
+            },
+          },
+          required: ["flashcards"],
+        },
+      });
+
+      this.openRouter.setUserMessage(
+        `Create flashcards from this text. Return ONLY a JSON array of objects with 'front' and 'back' properties: ${text}`
+      );
+
+      const response = await this.openRouter.sendChatMessage();
+      let parsedContent: unknown;
+
+      try {
+        parsedContent = JSON.parse(response);
+      } catch (parseError) {
+        this.logger.error("Failed to parse API response", parseError as Error, { response });
+        throw new Error("Invalid JSON in API response");
+      }
+
+      const flashcardsData = (parsedContent as { flashcards: unknown[] }).flashcards;
+      const validatedResponse = flashcardsArraySchema.parse(flashcardsData);
+
+      return validatedResponse.map((card) => ({
+        ...card,
+        source: "ai-full" as const,
+      }));
+    } catch (error) {
+      this.logger.error("AI service error", error as Error);
+      throw error;
+    }
   }
 
   private generateTextHash(text: string): string {
@@ -104,10 +174,10 @@ export class GenerationService {
         error_code: "GENERATION_FAILED",
         source_text_hash: this.generateTextHash(text),
         source_text_length: text.length,
-        model: "openrouter-default",
+        model: this.model,
       });
     } catch (logError) {
-      console.error("Failed to log generation error:", logError);
+      this.logger.error("Failed to log generation error", logError as Error);
     }
   }
 }
