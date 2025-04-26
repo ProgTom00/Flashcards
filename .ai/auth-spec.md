@@ -20,7 +20,7 @@
 
 #### Modyfikacje istniejących komponentów:
 - `src/layouts/Layout.astro` - dodanie warunkowego renderowania UserMenu w headerze dla zalogowanych użytkowników
-- `src/components/Header.tsx` - integracja z UserMenu i obsługa stanu zalogowania
+- `src/components/ui/Topbar.tsx` - integracja z UserMenu i obsługa stanu zalogowania
 
 ### 1.2 Przepływ użytkownika i walidacja
 

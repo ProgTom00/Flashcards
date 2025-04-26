@@ -3,7 +3,6 @@ import type { Database } from "./database.types";
 
 const supabaseUrl = import.meta.env.SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.SUPABASE_KEY;
-export const DEFAULT_USER_ID = "4ec4f564-fa47-4d77-9040-dac6c64b3fff";
 
 export const cookieOptions: CookieOptions = {
   path: "/",
