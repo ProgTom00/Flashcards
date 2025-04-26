@@ -1,0 +1,67 @@
+sequenceDiagram
+    participant U as User
+    participant C as Client
+    participant API as API Routes
+    participant S as Supabase Auth
+    participant E as Email Service
+
+    %% Registration Flow
+    rect rgb(240, 240, 240)
+        Note over U,S: Registration Flow
+        U->>C: Access /auth/register
+        C->>C: Display RegisterForm
+        U->>C: Fill registration form
+        C->>C: Validate form (client-side)
+        C->>API: POST /api/auth/register
+        API->>S: signUp(email, password)
+        S-->>API: Return user data
+        API-->>C: Return success/error
+        C->>C: Show success/error message
+        C->>U: Redirect to /generate
+    end
+
+    %% Login Flow
+    rect rgb(230, 230, 250)
+        Note over U,S: Login Flow
+        U->>C: Access /auth/login
+        C->>C: Display LoginForm
+        U->>C: Fill login form
+        C->>C: Validate form (client-side)
+        C->>API: POST /api/auth/login
+        API->>S: signIn(email, password)
+        S-->>API: Return session
+        API-->>C: Return success/error
+        C->>C: Show success/error message
+        C->>U: Redirect to /generate
+    end
+
+    %% Password Reset Flow
+    rect rgb(255, 240, 240)
+        Note over U,E: Password Reset Flow
+        U->>C: Access /auth/reset-password
+        C->>C: Display ResetPasswordForm
+        U->>C: Enter email
+        C->>API: POST /api/auth/reset-password
+        API->>S: resetPasswordForEmail()
+        S->>E: Send reset email
+        E-->>U: Receive reset email
+        U->>C: Click reset link
+        C->>C: Display NewPasswordForm
+        U->>C: Enter new password
+        C->>API: POST /api/auth/new-password
+        API->>S: updatePassword()
+        S-->>API: Confirm update
+        API-->>C: Return success
+        C->>U: Redirect to /auth/login
+    end
+
+    %% Logout Flow
+    rect rgb(240, 255, 240)
+        Note over U,S: Logout Flow
+        U->>C: Click logout in UserMenu
+        C->>API: POST /api/auth/logout
+        API->>S: signOut()
+        S-->>API: Confirm logout
+        API-->>C: Return success
+        C->>U: Redirect to /auth/login
+    end 
