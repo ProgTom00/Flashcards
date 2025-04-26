@@ -1,6 +1,7 @@
-import { WandSparkles, User } from "lucide-react";
+import { WandSparkles, User, LogOut } from "lucide-react";
 import { useAuthStore } from "../../store/authStore";
 import { useEffect } from "react";
+import { useToast } from "../../hooks/use-toast";
 
 interface TopbarProps {
   title?: string;
@@ -12,6 +13,7 @@ interface TopbarProps {
 
 export default function Topbar({ title = "Flashcards", initialUser }: TopbarProps) {
   const { user, setUser } = useAuthStore();
+  const { toast } = useToast();
 
   // Initialize auth store with user data from server
   useEffect(() => {
@@ -19,6 +21,31 @@ export default function Topbar({ title = "Flashcards", initialUser }: TopbarProp
       setUser(initialUser);
     }
   }, [initialUser, setUser]);
+
+  const handleLogout = async () => {
+    try {
+      const response = await fetch("/api/auth/logout", {
+        method: "POST",
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || "Failed to logout");
+      }
+
+      // Clear user from store
+      setUser(null);
+
+      // Redirect to login page
+      window.location.href = "/auth/login";
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to logout",
+      });
+    }
+  };
 
   return (
     <header className="sticky top-0 z-10 w-full bg-gray-900 border-b border-gray-800 p-3 px-4 md:p-4 md:px-6 shadow-md">
@@ -30,12 +57,22 @@ export default function Topbar({ title = "Flashcards", initialUser }: TopbarProp
           </h1>
         </div>
 
-        <div className="flex items-center space-x-3">
+        <div className="flex items-center space-x-4">
           {user && (
-            <div className="flex items-center space-x-2 text-gray-300">
-              <User className="size-4" />
-              <span className="text-sm">{user.email}</span>
-            </div>
+            <>
+              <div className="flex items-center space-x-2 text-gray-300">
+                <User className="size-4" />
+                <span className="text-sm hidden sm:inline">{user.email}</span>
+              </div>
+              <button
+                onClick={handleLogout}
+                className="flex items-center space-x-2 text-gray-300 hover:text-gray-100 transition-colors duration-200"
+                title="Logout"
+              >
+                <LogOut className="size-4" />
+                <span className="text-sm hidden sm:inline">Logout</span>
+              </button>
+            </>
           )}
         </div>
       </div>

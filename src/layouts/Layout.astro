@@ -2,6 +2,7 @@
 import { ViewTransitions } from "astro:transitions";
 import "../styles/global.css";
 import Topbar from "../components/ui/Topbar";
+import { createSupabaseServer } from "../db/supabase.client";
 
 interface Props {
   title: string;
@@ -10,6 +11,21 @@ interface Props {
 const { title } = Astro.props;
 const currentPath = Astro.url.pathname;
 const isAuthPage = currentPath.startsWith("/auth/");
+
+// Get user information if not on auth pages
+let user = null;
+if (!isAuthPage) {
+  const supabase = createSupabaseServer({ cookies: Astro.cookies, headers: Astro.request.headers });
+  const {
+    data: { user: userData },
+  } = await supabase.auth.getUser();
+  if (userData) {
+    user = {
+      id: userData.id,
+      email: userData.email,
+    };
+  }
+}
 ---
 
 <!doctype html>
@@ -24,7 +40,7 @@ const isAuthPage = currentPath.startsWith("/auth/");
     <ViewTransitions />
   </head>
   <body class="min-h-screen bg-gray-950 text-gray-100">
-    {!isAuthPage && <Topbar client:load />}
+    {!isAuthPage && <Topbar client:load initialUser={user} />}
     <slot />
   </body>
 </html>
