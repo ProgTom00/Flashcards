@@ -1,0 +1,37 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import LoginForm from "../../components/auth/LoginForm";
+import AuthHeader from "../../components/auth/AuthHeader";
+import { Toaster } from "../../components/ui/toaster";
+import { createSupabaseServer } from "../../db/supabase.client";
+
+// Redirect if user is already logged in
+const { cookies } = Astro;
+const supabase = createSupabaseServer({ cookies, headers: Astro.request.headers });
+const {
+  data: { user },
+} = await supabase.auth.getUser();
+
+if (user) {
+  return Astro.redirect("/generate");
+}
+---
+
+<Layout title="Login | Flashcards">
+  <main class="min-h-screen flex flex-col items-center justify-center bg-gray-50">
+    <div class="w-full max-w-md px-6 py-8 bg-white rounded-lg shadow-md">
+      <AuthHeader client:load />
+      <LoginForm client:load />
+
+      <div class="mt-4 text-center text-sm text-gray-600">
+        <a href="/auth/reset-password" class="text-primary hover:underline"> Forgot your password? </a>
+      </div>
+
+      <div class="mt-4 text-center text-sm text-gray-600">
+        Don't have an account?
+        <a href="/auth/register" class="text-primary hover:underline ml-1" data-astro-reload> Sign up </a>
+      </div>
+    </div>
+  </main>
+  <Toaster client:load />
+</Layout>

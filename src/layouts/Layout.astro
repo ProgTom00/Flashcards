@@ -1,23 +1,46 @@
 ---
+import { ViewTransitions } from "astro:transitions";
 import "../styles/global.css";
+import Topbar from "../components/ui/Topbar";
+import { createSupabaseServer } from "../db/supabase.client";
 
 interface Props {
-  title?: string;
+  title: string;
 }
 
-const { title = "10x Astro Starter" } = Astro.props;
+const { title } = Astro.props;
+const currentPath = Astro.url.pathname;
+const isAuthPage = currentPath.startsWith("/auth/");
+
+// Get user information if not on auth pages
+let user = null;
+if (!isAuthPage) {
+  const supabase = createSupabaseServer({ cookies: Astro.cookies, headers: Astro.request.headers });
+  const {
+    data: { user: userData },
+  } = await supabase.auth.getUser();
+  if (userData) {
+    user = {
+      id: userData.id,
+      email: userData.email,
+    };
+  }
+}
 ---
 
 <!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <meta name="description" content="Astro description" />
     <meta name="viewport" content="width=device-width" />
-    <link rel="icon" type="image/png" href="/favicon.png" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="generator" content={Astro.generator} />
     <title>{title}</title>
+    <ViewTransitions />
   </head>
-  <body>
+  <body class="min-h-screen bg-gray-950 text-gray-100">
+    {!isAuthPage && <Topbar client:load initialUser={user} />}
     <slot />
   </body>
 </html>

@@ -1,8 +1,9 @@
 ---
-import Welcome from "../components/Welcome.astro";
 import Layout from "../layouts/Layout.astro";
+
+return Astro.redirect("/generate");
 ---
 
-<Layout>
-  <Welcome />
+<Layout title="Flashcards">
+  <main class="container mx-auto px-4 py-8">Redirecting...</main>
 </Layout>

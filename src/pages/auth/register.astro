@@ -1,0 +1,19 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import RegisterForm from "../../components/auth/RegisterForm";
+import AuthHeader from "../../components/auth/AuthHeader";
+---
+
+<Layout title="Register | Flashcards">
+  <main class="min-h-screen flex flex-col items-center justify-center bg-gray-50">
+    <div class="w-full max-w-md px-6 py-8 bg-white rounded-lg shadow-md">
+      <AuthHeader client:load />
+      <RegisterForm client:load />
+
+      <div class="mt-4 text-center text-sm text-gray-600">
+        Already have an account?
+        <a href="/auth/login" class="text-primary hover:underline ml-1" data-astro-reload> Sign in </a>
+      </div>
+    </div>
+  </main>
+</Layout>
