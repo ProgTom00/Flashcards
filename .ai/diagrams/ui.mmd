@@ -1,0 +1,73 @@
+```mermaid
+graph TD
+    %% User Entry Points
+    A[User] -->|Visits| B["/auth/login"]
+    A -->|Visits| C["/auth/register"]
+    A -->|Visits| D["/auth/reset-password"]
+    
+    %% Authentication Pages
+    subgraph "Authentication Pages"
+        B -->|Renders| E["LoginForm.tsx"]
+        C -->|Renders| F["RegisterForm.tsx"]
+        D -->|Renders| G["ResetPasswordForm.tsx"]
+    end
+    
+    %% Form Components
+    subgraph "Form Validation & Submission"
+        E -->|Validates| H["Client-side Validation"]
+        F -->|Validates| H
+        G -->|Validates| H
+        
+        H -->|On Success| I["API Endpoints"]
+    end
+    
+    %% API Layer
+    subgraph "API Layer"
+        I -->|POST| J["/api/auth/login"]
+        I -->|POST| K["/api/auth/register"]
+        I -->|POST| L["/api/auth/reset-password"]
+        
+        J -->|Calls| M["Supabase Auth"]
+        K -->|Calls| M
+        L -->|Calls| M
+    end
+    
+    %% Authentication Results
+    M -->|Success| N["Update AuthStore"]
+    M -->|Error| O["Show Error Toast"]
+    
+    %% Post-Authentication Flow
+    N -->|Redirect| P["/generate"]
+    
+    %% Protected Routes
+    subgraph "Route Protection"
+        Q["Middleware"] -->|Check Auth| R["Protected Routes"]
+        Q -->|No Auth| S["Redirect to Login"]
+        Q -->|Public Route| T["Allow Access"]
+    end
+    
+    %% User Session Management
+    subgraph "Session Management"
+        U["UserMenu.tsx"] -->|Logout| V["/api/auth/logout"]
+        V -->|Clear| W["Clear Session"]
+        W -->|Redirect| B
+    end
+    
+    %% Password Reset Flow
+    subgraph "Password Reset Flow"
+        G -->|Submit Email| X["Send Reset Email"]
+        X -->|Success| Y["Email with Reset Link"]
+        Y -->|Click Link| Z["/auth/new-password"]
+        Z -->|Renders| AA["NewPasswordForm.tsx"]
+        AA -->|Submit| BB["/api/auth/new-password"]
+        BB -->|Success| B
+    end
+
+    style A fill:#f9f,stroke:#333,stroke-width:2px
+    style B fill:#bbf,stroke:#333,stroke-width:2px
+    style C fill:#bbf,stroke:#333,stroke-width:2px
+    style D fill:#bbf,stroke:#333,stroke-width:2px
+    style M fill:#bfb,stroke:#333,stroke-width:2px
+    style P fill:#fbb,stroke:#333,stroke-width:2px
+    style Q fill:#fbf,stroke:#333,stroke-width:2px
+``` 
