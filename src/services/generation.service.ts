@@ -1,6 +1,5 @@
 import { createHash } from "crypto";
 import type { FlashcardSuggestionDTO, GenerateFlashcardsResponseDTO } from "@/types";
-import { DEFAULT_USER_ID } from "@/db/supabase.client";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/db/database.types";
 import { OpenRouterService } from "@/lib/openrouter.service";
@@ -30,6 +29,7 @@ Return ONLY a JSON array of flashcard objects with 'front' and 'back' and 'sourc
 
   constructor(
     private readonly supabase: SupabaseClient<Database>,
+    private readonly userId: string,
     config?: { apiKey: string }
   ) {
     if (!config?.apiKey) {
@@ -91,7 +91,7 @@ Return ONLY a JSON array of flashcard objects with 'front' and 'back' and 'sourc
     const { data: generation, error: generationError } = await this.supabase
       .from("generations")
       .insert({
-        user_id: DEFAULT_USER_ID,
+        user_id: this.userId,
         duration: duration,
         generated_count: generatedCount,
         model: this.model,
@@ -169,7 +169,7 @@ Return ONLY a JSON array of flashcard objects with 'front' and 'back' and 'sourc
   private async logGenerationError(error: Error, text: string): Promise<void> {
     try {
       await this.supabase.from("generation_logs").insert({
-        user_id: DEFAULT_USER_ID,
+        user_id: this.userId,
         error_message: error.message,
         error_code: "GENERATION_FAILED",
         source_text_hash: this.generateTextHash(text),
