@@ -87,7 +87,7 @@ export default function RegisterForm() {
                 </div>
               </FormControl>
               <FormMessage />
-              <p className="text-xs text-gray-500">
+              <p className="text-sm text-gray-900 dark:text-gray-400">
                 Password must be at least 8 characters long, include an uppercase letter, a number, and a special
                 character.
               </p>
@@ -122,7 +122,7 @@ export default function RegisterForm() {
           )}
         />
 
-        <Button type="submit" className="w-full">
+        <Button type="submit" className="w-full bg-gray-900 text-gray-50 hover:bg-gray-800">
           Create Account
         </Button>
       </form>

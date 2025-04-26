@@ -42,7 +42,7 @@ export default function ResetPasswordForm() {
           )}
         />
 
-        <Button type="submit" className="w-full">
+        <Button type="submit" className="w-full bg-gray-900 text-gray-50 hover:bg-gray-800">
           Send Reset Link
         </Button>
       </form>

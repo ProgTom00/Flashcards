@@ -50,7 +50,7 @@ export default function NewPasswordForm() {
                 <Input type="password" placeholder="Enter your new password" {...field} />
               </FormControl>
               <FormMessage />
-              <p className="text-xs text-gray-500">
+              <p className="text-sm text-gray-900 dark:text-gray-400">
                 Password must be at least 8 characters long, include an uppercase letter, a number, and a special
                 character.
               </p>
