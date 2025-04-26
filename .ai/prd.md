@@ -58,12 +58,17 @@ Kryteria akceptacji:
 - Użytkownik otrzymuje potwierdzenie pomyślnej rejestracji i zostaje zalogowany.
 
 ID: US-002
-Tytuł: Logowanie do aplikacji
+Tytuł: Logowanie do aplikacji i Bezpieczeństwo
 Opis: Jako zarejestrowany użytkownik chcę móc się zalogować, aby mieć dostęp do moich fiszek i historii generowania.
 Kryteria akceptacji:
 - Po podaniu prawidłowych danych logowania użytkownik zostaje przekierowany do widoku generowania fiszek.
 - Błędne dane logowania wyświetlają komunikat o nieprawidłowych danych.
 - Dane dotyczące logowania przechowywane są w bezpieczny sposób.
+- Użytkownik NIE MOŻE korzysta z aplikacji bez logowania do systemu
+- Użytkownik może się wylogować z systemu poprzez przycisk w prawym górnym rogu w głównym @Layout.astro.
+- Użytkownik może logować się do systemu poprzez przycisk w prawym górnym rogu.
+- Odzyskiwanie hasła powinno być możliwe.
+
 
 ID: US-003
 Tytuł: Generowanie fiszek przy użyciu AI
