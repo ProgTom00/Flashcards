@@ -15,6 +15,7 @@ Welcome to the 10x-cards project! This application is designed to help users qui
   - [Out of Scope (MVP)](#out-of-scope-mvp)
 - [6. Project Status](#6-project-status)
 - [7. License](#7-license)
+- [8. Testing](#8-testing)
 
 ## Project Description
 10x-cards is a web-based application that enables users to:
@@ -29,6 +30,7 @@ The app aims to reduce the time and effort required to create high-quality flash
 - **Frontend:** Astro 5, React 19, TypeScript 5, Tailwind CSS 4, Shadcn/ui
 - **Backend:** Supabase (PostgreSQL, authentication, and backend-as-a-service)
 - **AI Integration:** Openrouter.ai for accessing multiple LLM models (OpenAI, Anthropic, Google, etc.)
+- **Testing:** Jest, React Testing Library, Vitest, @astro/testing for unit tests; Playwright for E2E tests
 - **CI/CD & Hosting:** GitHub Actions for CI/CD pipelines and DigitalOcean for hosting via Docker
 
 ## Getting Started Locally
@@ -105,3 +107,38 @@ The project includes the following key features:
 
 ## Project Status
 This project is currently in the MVP stage and under active development. Core functionalities have been implemented, with plans for future enhancements based on user feedback.
+
+## Testing
+
+This project uses two types of tests:
+
+### Unit Testing with Vitest
+
+We use Vitest with React Testing Library for component and unit testing.
+
+Commands:
+- `npm test` - Run all unit tests
+- `npm run test:watch` - Run tests in watch mode
+- `npm run test:ui` - Run tests with UI
+- `npm run test:coverage` - Generate coverage report
+
+Tests are located in:
+- `src/**/*.{test,spec}.{ts,tsx}` - Tests alongside source files
+- `test/unit/**/*.{test,spec}.{ts,tsx}` - Standalone test files
+
+### E2E Testing with Playwright
+
+We use Playwright for end-to-end testing with the Page Object Model pattern.
+
+Commands:
+- `npm run test:e2e` - Run all E2E tests
+- `npm run test:e2e:ui` - Run E2E tests with UI
+
+Tests are located in:
+- `e2e/*.spec.ts` - Test files
+- `e2e/page-objects/` - Page object models
+
+To generate tests with Playwright Codegen:
+```
+npx playwright codegen http://localhost:4321
+```
