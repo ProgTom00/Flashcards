@@ -2,7 +2,6 @@ import type { APIRoute } from "astro";
 import { z } from "zod";
 import type { CreateFlashcardDto } from "@/types";
 import { FlashcardsService } from "@/services/flashcards.service";
-import { DEFAULT_USER_ID } from "@/db/supabase.client";
 
 // Validation schema for a single flashcard
 const flashcardSchema = z
@@ -35,8 +34,24 @@ const createFlashcardsSchema = z.object({
     .max(100, "Maximum 100 flashcards can be created at once"),
 });
 
-export const POST: APIRoute = async ({ request }) => {
-  const flashcardsService = new FlashcardsService();
+export const POST: APIRoute = async ({ request, locals }) => {
+  // Check if user is authenticated
+  if (!locals.user) {
+    return new Response(
+      JSON.stringify({
+        error: "Unauthorized",
+        details: "You must be logged in to create flashcards",
+      }),
+      {
+        status: 401,
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    );
+  }
+
+  const flashcardsService = new FlashcardsService(locals.supabase);
 
   try {
     // Parse and validate request body
@@ -63,7 +78,7 @@ export const POST: APIRoute = async ({ request }) => {
     try {
       const createdFlashcards = await flashcardsService.createFlashcards(
         flashcards as CreateFlashcardDto[],
-        DEFAULT_USER_ID
+        locals.user.id
       );
 
       return new Response(

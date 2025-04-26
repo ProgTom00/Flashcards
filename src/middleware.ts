@@ -21,17 +21,21 @@ export const onRequest = defineMiddleware(async ({ locals, cookies, url, request
 
   const supabase = createSupabaseServer({ cookies, headers: request.headers });
 
+  // Add Supabase client to locals
+  locals.supabase = supabase;
+
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
   // Add user information to locals
-  locals.user = user
-    ? {
-        id: user.id,
-        email: user.email,
-      }
-    : null;
+  locals.user =
+    user && user.email
+      ? {
+          id: user.id,
+          email: user.email,
+        }
+      : null;
 
   // Redirect to login if not authenticated and trying to access protected route
   if (!user && !PUBLIC_PATHS.includes(url.pathname)) {

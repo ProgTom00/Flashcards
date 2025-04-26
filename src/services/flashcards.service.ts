@@ -1,13 +1,9 @@
-import type { CreateFlashcardDto, FlashcardDTO } from "../../src/types";
+import type { CreateFlashcardDto, FlashcardDTO } from "@/types";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/db/database.types";
-import { supabaseClient, DEFAULT_USER_ID } from "@/db/supabase.client";
-export class FlashcardsService {
-  private supabase: SupabaseClient<Database>;
 
-  constructor() {
-    this.supabase = supabaseClient;
-  }
+export class FlashcardsService {
+  constructor(private readonly supabase: SupabaseClient<Database>) {}
 
   async createFlashcards(flashcards: CreateFlashcardDto[], userId: string): Promise<FlashcardDTO[]> {
     const flashcardsWithUserId = flashcards.map((flashcard) => ({
