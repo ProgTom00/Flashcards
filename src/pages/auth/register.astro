@@ -2,6 +2,19 @@
 import Layout from "../../layouts/Layout.astro";
 import RegisterForm from "../../components/auth/RegisterForm";
 import AuthHeader from "../../components/auth/AuthHeader";
+import { Toaster } from "../../components/ui/toaster";
+import { createSupabaseServer } from "../../db/supabase.client";
+
+// Redirect if user is already logged in
+const { cookies } = Astro;
+const supabase = createSupabaseServer({ cookies, headers: Astro.request.headers });
+const {
+  data: { user },
+} = await supabase.auth.getUser();
+
+if (user) {
+  return Astro.redirect("/generate");
+}
 ---
 
 <Layout title="Register | Flashcards">
@@ -16,4 +29,5 @@ import AuthHeader from "../../components/auth/AuthHeader";
       </div>
     </div>
   </main>
+  <Toaster client:load />
 </Layout>
