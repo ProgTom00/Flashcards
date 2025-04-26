@@ -1,73 +1,70 @@
-```mermaid
-graph TD
-    %% User Entry Points
-    A[User] -->|Visits| B["/auth/login"]
-    A -->|Visits| C["/auth/register"]
-    A -->|Visits| D["/auth/reset-password"]
-    
-    %% Authentication Pages
-    subgraph "Authentication Pages"
-        B -->|Renders| E["LoginForm.tsx"]
-        C -->|Renders| F["RegisterForm.tsx"]
-        D -->|Renders| G["ResetPasswordForm.tsx"]
-    end
-    
-    %% Form Components
-    subgraph "Form Validation & Submission"
-        E -->|Validates| H["Client-side Validation"]
-        F -->|Validates| H
-        G -->|Validates| H
-        
-        H -->|On Success| I["API Endpoints"]
-    end
-    
-    %% API Layer
-    subgraph "API Layer"
-        I -->|POST| J["/api/auth/login"]
-        I -->|POST| K["/api/auth/register"]
-        I -->|POST| L["/api/auth/reset-password"]
-        
-        J -->|Calls| M["Supabase Auth"]
-        K -->|Calls| M
-        L -->|Calls| M
-    end
-    
-    %% Authentication Results
-    M -->|Success| N["Update AuthStore"]
-    M -->|Error| O["Show Error Toast"]
-    
-    %% Post-Authentication Flow
-    N -->|Redirect| P["/generate"]
-    
-    %% Protected Routes
-    subgraph "Route Protection"
-        Q["Middleware"] -->|Check Auth| R["Protected Routes"]
-        Q -->|No Auth| S["Redirect to Login"]
-        Q -->|Public Route| T["Allow Access"]
-    end
-    
-    %% User Session Management
-    subgraph "Session Management"
-        U["UserMenu.tsx"] -->|Logout| V["/api/auth/logout"]
-        V -->|Clear| W["Clear Session"]
-        W -->|Redirect| B
-    end
-    
-    %% Password Reset Flow
-    subgraph "Password Reset Flow"
-        G -->|Submit Email| X["Send Reset Email"]
-        X -->|Success| Y["Email with Reset Link"]
-        Y -->|Click Link| Z["/auth/new-password"]
-        Z -->|Renders| AA["NewPasswordForm.tsx"]
-        AA -->|Submit| BB["/api/auth/new-password"]
-        BB -->|Success| B
+flowchart TD
+    %% Style definitions
+    classDef userNode fill:#f9f,stroke:#333,stroke-width:2px
+    classDef pageNode fill:#bbf,stroke:#333,stroke-width:2px
+    classDef authNode fill:#bfb,stroke:#333,stroke-width:2px
+    classDef redirectNode fill:#fbb,stroke:#333,stroke-width:2px
+    classDef middlewareNode fill:#fbf,stroke:#333,stroke-width:2px
+
+    %% Punkty wejścia użytkownika
+    U[Użytkownik]:::userNode
+    U -->|Odwiedza| L["Logowanie"]
+    U -->|Odwiedza| R["Rejestracja"]
+    U -->|Odwiedza| P["Reset Hasła"]
+
+    %% Strony Autentykacji
+    subgraph "Strony Autentykacji"
+        L:::pageNode -->|Renderuje| LF["LoginForm"]
+        R:::pageNode -->|Renderuje| RF["RegisterForm"]
+        P:::pageNode -->|Renderuje| PF["ResetPasswordForm"]
     end
 
-    style A fill:#f9f,stroke:#333,stroke-width:2px
-    style B fill:#bbf,stroke:#333,stroke-width:2px
-    style C fill:#bbf,stroke:#333,stroke-width:2px
-    style D fill:#bbf,stroke:#333,stroke-width:2px
-    style M fill:#bfb,stroke:#333,stroke-width:2px
-    style P fill:#fbb,stroke:#333,stroke-width:2px
-    style Q fill:#fbf,stroke:#333,stroke-width:2px
-``` 
+    %% Komponenty Formularzy
+    subgraph "Walidacja i Wysyłka Formularzy"
+        LF -->|Waliduje| V["Walidacja Client-side"]
+        RF -->|Waliduje| V
+        PF -->|Waliduje| V
+        V -->|Sukces| API["Endpointy API"]
+    end
+
+    %% Warstwa API
+    subgraph "Warstwa API"
+        API -->|POST| AL["/api/auth/login"]
+        API -->|POST| AR["/api/auth/register"]
+        API -->|POST| AP["/api/auth/reset-password"]
+        
+        AL -->|Wywołuje| AUTH["Supabase Auth"]:::authNode
+        AR -->|Wywołuje| AUTH
+        AP -->|Wywołuje| AUTH
+    end
+
+    %% Rezultaty Autentykacji
+    AUTH -->|Sukces| AS["Aktualizacja AuthStore"]
+    AUTH -->|Błąd| AE["Pokaż Komunikat Błędu"]
+
+    %% Przepływ po Autentykacji
+    AS -->|Przekierowanie| GEN["/generate"]:::redirectNode
+
+    %% Ochrona Ścieżek
+    subgraph "Ochrona Ścieżek"
+        MID["Middleware"]:::middlewareNode -->|Sprawdź Auth| PR["Chronione Ścieżki"]
+        MID -->|Brak Auth| RL["Przekieruj do Logowania"]
+        MID -->|Ścieżka Publiczna| PA["Zezwól na Dostęp"]
+    end
+
+    %% Zarządzanie Sesją
+    subgraph "Zarządzanie Sesją"
+        UM["UserMenu"] -->|Wyloguj| LO["/api/auth/logout"]
+        LO -->|Wyczyść| CS["Wyczyść Sesję"]
+        CS -->|Przekieruj| L
+    end
+
+    %% Przepływ Resetu Hasła
+    subgraph "Przepływ Resetu Hasła"
+        PF -->|Wyślij Email| SE["Wyślij Email Resetujący"]
+        SE -->|Sukces| EM["Email z Linkiem"]
+        EM -->|Kliknij Link| NP["/auth/new-password"]
+        NP -->|Renderuje| NPF["NewPasswordForm"]
+        NPF -->|Wyślij| ANP["/api/auth/new-password"]
+        ANP -->|Sukces| L
+    end 
