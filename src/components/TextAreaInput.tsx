@@ -14,6 +14,7 @@ export function TextAreaInput({ value, onChange, placeholder, disabled }: TextAr
       onChange={(e) => onChange(e.target.value)}
       placeholder={placeholder}
       disabled={disabled}
+      data-testid="flashcard-text-input"
       className="w-full min-h-[200px] p-4 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50"
     />
   );

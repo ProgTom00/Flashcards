@@ -1,4 +1,5 @@
 import React from "react";
+import { Button } from "./ui/button";
 
 interface GenerateButtonProps {
   onClick: () => void;
@@ -8,12 +9,14 @@ interface GenerateButtonProps {
 
 export function GenerateButton({ onClick, disabled, loading }: GenerateButtonProps) {
   return (
-    <button
+    <Button
       onClick={onClick}
       disabled={disabled}
-      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+      data-testid="generate-button"
+      className="bg-green-600 hover:bg-green-700 text-white"
+      size="default"
     >
       {loading ? "Generating..." : "Generate Flashcards"}
-    </button>
+    </Button>
   );
 }

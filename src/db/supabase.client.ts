@@ -1,8 +1,13 @@
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import type { Database } from "./database.types";
 
-const supabaseUrl = import.meta.env.SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.SUPABASE_KEY;
+const isTestEnvironment = process.env.NODE_ENV === "test";
+
+const supabaseUrl = isTestEnvironment ? import.meta.env.NEXT_PUBLIC_SUPABASE_URL : import.meta.env.SUPABASE_URL;
+
+const supabaseAnonKey = isTestEnvironment
+  ? import.meta.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  : import.meta.env.SUPABASE_KEY;
 
 export const cookieOptions: CookieOptions = {
   path: "/",
