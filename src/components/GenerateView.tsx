@@ -152,7 +152,7 @@ export default function GenerateView() {
   const isTextValid = inputText.length >= 1000 && inputText.length <= 15000;
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8" data-testid="generate-view-container">
       {notification && <ToastNotifications message={notification.message} type={notification.type} />}
 
       <div className="space-y-4">
@@ -161,13 +161,19 @@ export default function GenerateView() {
           onChange={setInputText}
           placeholder="Enter your text here (minimum 1000 characters, maximum 15000 characters)"
           disabled={loading}
+          data-testid="flashcard-text-input"
         />
         <div className="flex justify-end">
-          <GenerateButton onClick={handleGenerateFlashcards} disabled={!isTextValid || loading} loading={loading} />
+          <GenerateButton
+            onClick={handleGenerateFlashcards}
+            disabled={!isTextValid || loading}
+            loading={loading}
+            data-testid="generate-flashcards-button"
+          />
         </div>
       </div>
 
-      {loading && <Loader />}
+      {loading && <Loader data-testid="loading-spinner" />}
 
       {/* Navigation buttons */}
       {(suggestions.length > 0 || acceptedFlashcards.length > 0) && (
@@ -177,6 +183,7 @@ export default function GenerateView() {
             className={`px-4 py-2 rounded-lg transition-colors ${
               !showAccepted ? "bg-blue-100 text-blue-800 font-medium" : "text-gray-600 hover:bg-gray-100"
             }`}
+            data-testid="suggestions-tab-button"
           >
             Suggestions ({suggestions.length})
           </button>
@@ -185,6 +192,7 @@ export default function GenerateView() {
             className={`px-4 py-2 rounded-lg transition-colors ${
               showAccepted ? "bg-green-100 text-green-800 font-medium" : "text-gray-600 hover:bg-gray-100"
             }`}
+            data-testid="accepted-tab-button"
           >
             Accepted ({acceptedFlashcards.length})
           </button>
@@ -193,18 +201,19 @@ export default function GenerateView() {
 
       {/* Show suggestions or accepted flashcards based on state */}
       {!showAccepted && suggestions.length > 0 && (
-        <div className="space-y-4">
+        <div className="space-y-4" data-testid="suggestions-list-container">
           <SuggestionsList
             suggestions={suggestions}
             onAccept={handleAcceptFlashcard}
             onEdit={handleEditFlashcard}
             onReject={handleRejectFlashcard}
+            data-testid="suggestions-list"
           />
         </div>
       )}
 
       {showAccepted && acceptedFlashcards.length > 0 && (
-        <div className="space-y-4">
+        <div className="space-y-4" data-testid="accepted-flashcards-container">
           <div className="flex justify-between items-center">
             <h2 className="text-xl font-semibold">Accepted Flashcards</h2>
             <BulkSaveButton
@@ -212,6 +221,7 @@ export default function GenerateView() {
               onSave={handleBulkSave}
               disabled={saving}
               loading={saving}
+              data-testid="bulk-save-button"
             />
           </div>
           <SuggestionsList
@@ -220,6 +230,7 @@ export default function GenerateView() {
             onEdit={() => {}}
             onReject={handleRemoveFromAccepted}
             mode="accepted"
+            data-testid="accepted-flashcards-list"
           />
         </div>
       )}

@@ -129,7 +129,9 @@ export function FlashcardSuggestionCard({
         >
           <div className="h-full bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg p-4 flex flex-col">
             <p className="font-medium text-gray-900 mb-2">Question:</p>
-            <p className={`text-gray-800 flex-grow ${contentClasses}`}>{flashcard.front}</p>
+            <p className={`text-gray-800 flex-grow ${contentClasses}`} data-testid="flashcard-front-content">
+              {flashcard.front}
+            </p>
             {!inModal && flashcard.front.length > 100 && (
               <button onClick={handleExpandClick} className="text-sm text-blue-600 hover:text-blue-800 underline mt-2">
                 Show more
@@ -144,7 +146,9 @@ export function FlashcardSuggestionCard({
         >
           <div className="h-full bg-gradient-to-br from-emerald-50 to-teal-50 rounded-lg p-4 flex flex-col">
             <p className="font-medium text-gray-900 mb-2">Answer:</p>
-            <p className={`text-gray-800 flex-grow ${contentClasses}`}>{flashcard.back}</p>
+            <p className={`text-gray-800 flex-grow ${contentClasses}`} data-testid="flashcard-back-content">
+              {flashcard.back}
+            </p>
             {!inModal && flashcard.back.length > 100 && (
               <button
                 onClick={handleExpandClick}
@@ -241,12 +245,14 @@ export function FlashcardSuggestionCard({
                     onReject(flashcard);
                   }}
                   className="px-3 py-1 text-sm text-red-600 hover:bg-red-50 rounded-md transition-colors"
+                  data-testid="reject-button"
                 >
                   Reject
                 </button>
                 <button
                   onClick={handleEditClick}
                   className="px-3 py-1 text-sm text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
+                  data-testid="edit-button"
                 >
                   Edit
                 </button>
@@ -256,6 +262,7 @@ export function FlashcardSuggestionCard({
                     onAccept(flashcard);
                   }}
                   className="px-3 py-1 text-sm text-white bg-green-600 hover:bg-green-700 rounded-md transition-colors"
+                  data-testid="accept-button"
                 >
                   Accept
                 </button>
@@ -267,6 +274,7 @@ export function FlashcardSuggestionCard({
                   onReject(flashcard);
                 }}
                 className="px-3 py-1 text-sm text-red-600 hover:bg-red-50 rounded-md transition-colors"
+                data-testid="remove-button"
               >
                 Remove
               </button>

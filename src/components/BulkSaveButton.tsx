@@ -1,5 +1,6 @@
 import React from "react";
 import type { FlashcardSuggestionDTO } from "../types";
+import { Button } from "./ui/button";
 
 interface BulkSaveButtonProps {
   flashcards: FlashcardSuggestionDTO[];
@@ -10,12 +11,14 @@ interface BulkSaveButtonProps {
 
 export function BulkSaveButton({ flashcards, onSave, disabled, loading }: BulkSaveButtonProps) {
   return (
-    <button
+    <Button
       onClick={() => onSave(flashcards)}
       disabled={disabled || flashcards.length === 0}
-      className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+      data-testid="bulk-save-button"
+      className="bg-green-600 hover:bg-green-700 text-white"
+      size="default"
     >
       {loading ? "Saving..." : `Save ${flashcards.length} Flashcard${flashcards.length === 1 ? "" : "s"}`}
-    </button>
+    </Button>
   );
 }

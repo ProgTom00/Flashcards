@@ -11,7 +11,11 @@ export function ToastNotifications({ message, type }: ToastNotificationsProps) {
   const borderColor = type === "success" ? "border-green-400" : "border-red-400";
 
   return (
-    <div className={`${bgColor} ${textColor} ${borderColor} border-l-4 p-4 rounded-r-lg`} role="alert">
+    <div
+      className={`${bgColor} ${textColor} ${borderColor} border-l-4 p-4 rounded-r-lg`}
+      role="alert"
+      data-testid="notification"
+    >
       <p>{message}</p>
     </div>
   );

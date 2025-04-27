@@ -88,7 +88,7 @@ export default function LoginForm() {
             <FormItem>
               <FormLabel>Email</FormLabel>
               <FormControl>
-                <Input type="email" placeholder="Enter your email" {...field} />
+                <Input type="email" placeholder="Enter your email" {...field} data-testid="auth-input-email" />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -103,7 +103,12 @@ export default function LoginForm() {
               <FormLabel>Password</FormLabel>
               <FormControl>
                 <div className="relative">
-                  <Input type={showPassword ? "text" : "password"} placeholder="Enter your password" {...field} />
+                  <Input
+                    type={showPassword ? "text" : "password"}
+                    placeholder="Enter your password"
+                    {...field}
+                    data-testid="auth-input-password"
+                  />
                   <button
                     type="button"
                     onClick={togglePasswordVisibility}
@@ -118,7 +123,12 @@ export default function LoginForm() {
           )}
         />
 
-        <Button type="submit" className="w-full bg-gray-900 text-gray-50 hover:bg-gray-800" disabled={isLoading}>
+        <Button
+          type="submit"
+          className="w-full bg-gray-900 text-gray-50 hover:bg-gray-800"
+          disabled={isLoading}
+          data-testid="auth-submit-button"
+        >
           {isLoading ? "Signing in..." : "Sign In"}
         </Button>
       </form>
