@@ -25,12 +25,12 @@ export default defineConfig({
     {
       name: "setup",
       testMatch: /.*\.setup\.ts/,
-      // teardown: "cleanup",
+      // teardown: "cleanup", // Wyłączamy teardown
     },
     // Cleanup project
     // {
-    //   name: 'cleanup',
-    //   testMatch: /global\.teardown\.ts/,
+    //   name: "cleanup",
+    //   testMatch: /.*\.teardown\.ts/,
     // },
     {
       name: "chromium",
@@ -39,6 +39,7 @@ export default defineConfig({
         storageState: "playwright/.auth/user.json",
       },
       dependencies: ["setup"],
+      // teardown: "cleanup", // Wyłączamy teardown
     },
   ],
   webServer: {
