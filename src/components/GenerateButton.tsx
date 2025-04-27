@@ -9,7 +9,13 @@ interface GenerateButtonProps {
 
 export function GenerateButton({ onClick, disabled, loading }: GenerateButtonProps) {
   return (
-    <Button onClick={onClick} disabled={disabled} data-testid="generate-button" variant="default" size="default">
+    <Button
+      onClick={onClick}
+      disabled={disabled}
+      data-testid="generate-button"
+      className="bg-green-600 hover:bg-green-700 text-white"
+      size="default"
+    >
       {loading ? "Generating..." : "Generate Flashcards"}
     </Button>
   );
