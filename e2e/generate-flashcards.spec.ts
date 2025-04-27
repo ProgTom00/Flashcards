@@ -44,6 +44,10 @@ test.describe("Flashcard Generation Flow", () => {
     await generateComponent.expectLoadingSpinnerToBeVisible();
     await generateComponent.expectLoadingSpinnerToBeHidden();
 
+    // Verify notifications
+    await notificationComponent.expectSuccessMessage();
+    await notificationComponent.expectNotificationToDisappear();
+
     // Verify suggestions are displayed
     await navigationComponent.expectToBeInSuggestionsTab();
 
@@ -66,8 +70,8 @@ test.describe("Flashcard Generation Flow", () => {
     await navigationComponent.saveBulk();
 
     // Verify save success later
-    // await notificationComponent.expectSuccessMessage("Successfully saved");
-    // await notificationComponent.expectNotificationToDisappear();
+    await notificationComponent.expectSuccessMessage("Successfully saved 1 flashcards");
+    await notificationComponent.expectNotificationToDisappear();
 
     // Verify accepted list is cleared after save
     await navigationComponent.expectAcceptedCount(0);
