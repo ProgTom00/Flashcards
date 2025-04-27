@@ -1,17 +1,18 @@
 import React from "react";
+import type { UseFormRegisterReturn } from "react-hook-form";
 
-interface TextAreaInputProps {
-  value: string;
-  onChange: (value: string) => void;
+interface TextAreaInputProps extends UseFormRegisterReturn {
   placeholder?: string;
   disabled?: boolean;
 }
 
-export function TextAreaInput({ value, onChange, placeholder, disabled }: TextAreaInputProps) {
+export function TextAreaInput({ onChange, onBlur, name, ref, placeholder, disabled }: TextAreaInputProps) {
   return (
     <textarea
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
+      onChange={onChange}
+      onBlur={onBlur}
+      name={name}
+      ref={ref}
       placeholder={placeholder}
       disabled={disabled}
       data-testid="flashcard-text-input"

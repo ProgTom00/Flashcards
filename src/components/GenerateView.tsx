@@ -1,64 +1,49 @@
 import React, { useState, useEffect } from "react";
-import type {
-  GenerateFlashcardsCommand,
-  FlashcardSuggestionDTO,
-  CreateFlashcardDto,
-  GenerateFlashcardsResponseDTO,
-} from "../types";
+import type { FlashcardSuggestionDTO } from "../types";
 import { TextAreaInput } from "./TextAreaInput";
 import { GenerateButton } from "./GenerateButton";
 import { Loader } from "./Loader";
 import { SuggestionsList } from "./SuggestionsList";
 import { ToastNotifications } from "./ToastNotifications";
 import { BulkSaveButton } from "./BulkSaveButton";
+import { useGenerateForm } from "./hooks/useGenerateForm";
+import { useFlashcardsAPI } from "./hooks/useFlashcardsAPI";
+import type { GenerateFlashcardsFormData } from "../types/schemas";
+import { QueryProvider } from "./providers/QueryProvider";
 
-export default function GenerateView() {
-  // State management
-  const [inputText, setInputText] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [saving, setSaving] = useState(false);
+function GenerateViewContent() {
   const [suggestions, setSuggestions] = useState<FlashcardSuggestionDTO[]>([]);
   const [acceptedFlashcards, setAcceptedFlashcards] = useState<FlashcardSuggestionDTO[]>([]);
   const [notification, setNotification] = useState<{ message: string; type: "success" | "error" } | null>(null);
   const [showAccepted, setShowAccepted] = useState(false);
   const [currentGenerationId, setCurrentGenerationId] = useState<string | null>(null);
 
+  const { generateFlashcards, saveFlashcards, isGenerating, isSaving } = useFlashcardsAPI();
+
   // Handler for generating flashcards
-  const handleGenerateFlashcards = async () => {
+  const handleGenerateFlashcards = async (data: GenerateFlashcardsFormData) => {
     try {
-      setLoading(true);
       setNotification(null);
       setShowAccepted(false);
 
-      const response = await fetch("/api/generate", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ text: inputText } as GenerateFlashcardsCommand),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to generate flashcards");
-      }
-
-      const data = (await response.json()) as GenerateFlashcardsResponseDTO;
-      setCurrentGenerationId(data.generation_id);
-      setSuggestions(data.data);
+      const response = await generateFlashcards(data);
+      setCurrentGenerationId(response.generation_id);
+      setSuggestions(response.data);
       setNotification({
-        message: `Successfully generated ${data.data.length} flashcards`,
+        message: `Successfully generated ${response.data.length} flashcards`,
         type: "success",
       });
-    } catch (error) {
+    } catch (err) {
       setNotification({
-        message: error instanceof Error ? error.message : "An error occurred",
+        message: err instanceof Error ? err.message : "An error occurred while generating flashcards",
         type: "error",
       });
-    } finally {
-      setLoading(false);
     }
   };
+
+  const { register, errors, handleSubmit, isTextValid, textLength } = useGenerateForm({
+    onSubmit: handleGenerateFlashcards,
+  });
 
   // Handlers for flashcard actions
   const handleAcceptFlashcard = (flashcard: FlashcardSuggestionDTO) => {
@@ -92,28 +77,8 @@ export default function GenerateView() {
     }
 
     try {
-      setSaving(true);
       setNotification(null);
-
-      const flashcardsToSave: CreateFlashcardDto[] = flashcards.map((card) => ({
-        front: card.front,
-        back: card.back,
-        source: card.source || "ai-full",
-        generation_id: currentGenerationId,
-      }));
-
-      const response = await fetch("/api/flashcards", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ flashcards: flashcardsToSave }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to save flashcards");
-      }
+      await saveFlashcards({ flashcards, generationId: currentGenerationId });
 
       setNotification({
         message: `Successfully saved ${flashcards.length} flashcards`,
@@ -128,13 +93,11 @@ export default function GenerateView() {
       if (suggestions.length === 0) {
         setCurrentGenerationId(null);
       }
-    } catch (error) {
+    } catch (err) {
       setNotification({
-        message: error instanceof Error ? error.message : "Failed to save flashcards",
+        message: err instanceof Error ? err.message : "Failed to save flashcards",
         type: "error",
       });
-    } finally {
-      setSaving(false);
     }
   };
 
@@ -148,32 +111,35 @@ export default function GenerateView() {
     }
   }, [notification]);
 
-  // Validation for the generate button
-  const isTextValid = inputText.length >= 1000 && inputText.length <= 15000;
-
   return (
     <div className="space-y-8" data-testid="generate-view-container">
       {notification && <ToastNotifications message={notification.message} type={notification.type} />}
 
-      <div className="space-y-4">
-        <TextAreaInput
-          value={inputText}
-          onChange={setInputText}
-          placeholder="Enter your text here (minimum 1000 characters, maximum 15000 characters)"
-          disabled={loading}
-          data-testid="flashcard-text-input"
-        />
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div>
+          <TextAreaInput
+            {...register("text")}
+            placeholder="Enter your text here (minimum 1000 characters, maximum 15000 characters)"
+            disabled={isGenerating}
+            data-testid="flashcard-text-input"
+          />
+          {errors.text && (
+            <p className="mt-1 text-sm text-red-500" role="alert">
+              {errors.text.message}
+            </p>
+          )}
+          <p className="mt-1 text-sm text-gray-500">Characters: {textLength} / 15000</p>
+        </div>
         <div className="flex justify-end">
           <GenerateButton
-            onClick={handleGenerateFlashcards}
-            disabled={!isTextValid || loading}
-            loading={loading}
+            disabled={!isTextValid || isGenerating}
+            loading={isGenerating}
             data-testid="generate-flashcards-button"
           />
         </div>
-      </div>
+      </form>
 
-      {loading && <Loader data-testid="loading-spinner" />}
+      {isGenerating && <Loader data-testid="loading-spinner" />}
 
       {/* Navigation buttons */}
       {(suggestions.length > 0 || acceptedFlashcards.length > 0) && (
@@ -219,15 +185,15 @@ export default function GenerateView() {
             <BulkSaveButton
               flashcards={acceptedFlashcards}
               onSave={handleBulkSave}
-              disabled={saving}
-              loading={saving}
+              disabled={isSaving}
+              loading={isSaving}
               data-testid="bulk-save-button"
             />
           </div>
           <SuggestionsList
             suggestions={acceptedFlashcards}
-            onAccept={() => {}}
-            onEdit={() => {}}
+            onAccept={handleAcceptFlashcard}
+            onEdit={handleEditFlashcard}
             onReject={handleRemoveFromAccepted}
             mode="accepted"
             data-testid="accepted-flashcards-list"
@@ -235,5 +201,13 @@ export default function GenerateView() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function GenerateView() {
+  return (
+    <QueryProvider>
+      <GenerateViewContent />
+    </QueryProvider>
   );
 }

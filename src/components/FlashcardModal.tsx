@@ -1,5 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import type { Flashcard } from "@/types";
+import { useKeyboardEvents } from "./hooks/useKeyboardEvents";
 
 interface FlashcardModalProps {
   flashcard: Flashcard;
@@ -9,22 +10,14 @@ interface FlashcardModalProps {
 
 export function FlashcardModal({ flashcard, isOpen, onClose }: FlashcardModalProps) {
   const [isFlipped, setIsFlipped] = useState(false);
+  const modalRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    if (!isOpen) return;
-
-    const handleKeyPress = (e: KeyboardEvent) => {
-      if (e.code === "Space") {
-        e.preventDefault();
-        setIsFlipped((prev) => !prev);
-      } else if (e.code === "Escape") {
-        onClose();
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyPress);
-    return () => window.removeEventListener("keydown", handleKeyPress);
-  }, [isOpen, onClose]);
+  useKeyboardEvents({
+    onSpace: () => setIsFlipped((prev) => !prev),
+    onEscape: onClose,
+    isEnabled: isOpen,
+    targetRef: modalRef,
+  });
 
   // Reset flip state when modal is opened with a new card
   useEffect(() => {
@@ -41,7 +34,10 @@ export function FlashcardModal({ flashcard, isOpen, onClose }: FlashcardModalPro
       <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
 
       {/* Modal container */}
-      <div className="relative w-full max-w-2xl mx-4 bg-white rounded-lg shadow-xl transform transition-all">
+      <div
+        ref={modalRef}
+        className="relative w-full max-w-2xl mx-4 bg-white rounded-lg shadow-xl transform transition-all"
+      >
         {/* Close button */}
         <button onClick={onClose} className="absolute top-4 right-4 text-gray-500 hover:text-gray-700">
           <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">

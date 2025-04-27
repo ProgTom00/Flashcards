@@ -1,16 +1,15 @@
 import React from "react";
 import { Button } from "./ui/button";
+import type { ButtonHTMLAttributes } from "react";
 
-interface GenerateButtonProps {
-  onClick: () => void;
-  disabled?: boolean;
+interface GenerateButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   loading?: boolean;
 }
 
-export function GenerateButton({ onClick, disabled, loading }: GenerateButtonProps) {
+export function GenerateButton({ disabled, loading, ...props }: GenerateButtonProps) {
   return (
     <Button
-      onClick={onClick}
+      {...props}
       disabled={disabled}
       data-testid="generate-button"
       className="bg-green-600 hover:bg-green-700 text-white"
