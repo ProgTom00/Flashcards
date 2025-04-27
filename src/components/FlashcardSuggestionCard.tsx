@@ -1,6 +1,9 @@
 // FlashcardSuggestionCard component - handles the display and interaction of flashcard suggestions
 import React, { useState, useRef, useEffect } from "react";
 import type { FlashcardSuggestionDTO } from "../types";
+import { useFlashcardForm } from "./hooks/useFlashcardForm";
+import type { FlashcardFormData } from "../types/schemas";
+import { FlashcardModal } from "./FlashcardModal";
 import "../styles/animations.css";
 
 interface FlashcardSuggestionCardProps {
@@ -10,6 +13,151 @@ interface FlashcardSuggestionCardProps {
   onReject: (flashcard: FlashcardSuggestionDTO) => void;
   mode?: "suggestions" | "accepted";
 }
+
+const FlashcardContent = ({
+  isFlipped,
+  content,
+  type,
+  onExpand,
+}: {
+  isFlipped: boolean;
+  content: string;
+  type: "question" | "answer";
+  onExpand?: () => void;
+}) => {
+  const contentRef = useRef<HTMLParagraphElement>(null);
+  const [isOverflowing, setIsOverflowing] = useState(false);
+
+  useEffect(() => {
+    const checkOverflow = () => {
+      if (contentRef.current) {
+        const isContentOverflowing =
+          contentRef.current.scrollHeight > contentRef.current.clientHeight ||
+          contentRef.current.scrollWidth > contentRef.current.clientWidth;
+        setIsOverflowing(isContentOverflowing);
+      }
+    };
+
+    checkOverflow();
+    // Add resize listener to handle window size changes
+    window.addEventListener("resize", checkOverflow);
+    return () => window.removeEventListener("resize", checkOverflow);
+  }, [content]);
+
+  return (
+    <div
+      className={`absolute inset-0 p-4 sm:p-6 transition-opacity duration-300 ${
+        isFlipped
+          ? type === "answer"
+            ? "opacity-100"
+            : "opacity-0"
+          : type === "question"
+            ? "opacity-100"
+            : "opacity-0"
+      }`}
+    >
+      <div
+        className={`h-full bg-gradient-to-br ${
+          type === "question" ? "from-blue-50 to-indigo-50" : "from-emerald-50 to-teal-50"
+        } rounded-lg p-3 sm:p-4 flex flex-col`}
+      >
+        <p className="font-medium text-gray-900 mb-2">{type === "question" ? "Question:" : "Answer:"}</p>
+        <p
+          ref={contentRef}
+          className="text-gray-800 flex-grow text-base line-clamp-4 overflow-hidden"
+          data-testid={`flashcard-${type === "question" ? "front" : "back"}-content`}
+        >
+          {content}
+        </p>
+        {isOverflowing && onExpand && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onExpand();
+            }}
+            className={`text-sm ${
+              type === "question" ? "text-blue-600 hover:text-blue-800" : "text-emerald-600 hover:text-emerald-800"
+            } underline mt-2`}
+          >
+            Show more
+          </button>
+        )}
+      </div>
+    </div>
+  );
+};
+
+const FlashcardEditForm = ({
+  flashcard,
+  onSubmit,
+  onCancel,
+}: {
+  flashcard: FlashcardSuggestionDTO;
+  onSubmit: (data: FlashcardFormData) => void;
+  onCancel: () => void;
+}) => {
+  const { register, errors, handleSubmit, handleCancel } = useFlashcardForm({
+    flashcard,
+    onSubmit,
+    onCancel,
+  });
+
+  return (
+    <div className="w-full bg-white rounded-xl shadow-md p-4 sm:p-6 space-y-4 animate-fade-in">
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div>
+          <label htmlFor="front" className="block text-sm font-medium text-gray-700 mb-1">
+            Question
+          </label>
+          <textarea
+            {...register("front")}
+            className={`w-full min-h-[80px] p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+              errors.front ? "border-red-500" : "border-gray-300"
+            }`}
+            placeholder="Enter your question"
+          />
+          {errors.front && (
+            <p className="mt-1 text-sm text-red-500" role="alert">
+              {errors.front.message}
+            </p>
+          )}
+        </div>
+        <div>
+          <label htmlFor="back" className="block text-sm font-medium text-gray-700 mb-1">
+            Answer
+          </label>
+          <textarea
+            {...register("back")}
+            className={`w-full min-h-[120px] p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+              errors.back ? "border-red-500" : "border-gray-300"
+            }`}
+            placeholder="Enter the answer"
+          />
+          {errors.back && (
+            <p className="mt-1 text-sm text-red-500" role="alert">
+              {errors.back.message}
+            </p>
+          )}
+        </div>
+        <div className="flex justify-end space-x-2">
+          <button
+            type="button"
+            onClick={handleCancel}
+            className="min-w-[80px] min-h-[44px] px-4 py-2 text-sm text-gray-600 hover:bg-gray-50 rounded-md transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            className="min-w-[80px] min-h-[44px] px-4 py-2 text-sm text-white bg-blue-600 hover:bg-blue-700 rounded-md transition-colors"
+          >
+            Save
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+};
 
 export function FlashcardSuggestionCard({
   flashcard,
@@ -21,247 +169,116 @@ export function FlashcardSuggestionCard({
   const [isFlipped, setIsFlipped] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editedFront, setEditedFront] = useState(flashcard.front);
-  const [editedBack, setEditedBack] = useState(flashcard.back);
-  const [errors, setErrors] = useState<{ front?: string; back?: string }>({});
-  const frontInputRef = useRef<HTMLTextAreaElement>(null);
-  const cardRef = useRef<HTMLDivElement>(null);
-  const modalRef = useRef<HTMLDivElement>(null);
+  const [touchStart, setTouchStart] = useState<{ x: number; y: number } | null>(null);
+  const cardRef = useRef<HTMLButtonElement>(null);
 
-  useEffect(() => {
-    if (isEditing && frontInputRef.current) {
-      frontInputRef.current.focus();
-    }
-  }, [isEditing]);
-
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && isModalOpen) {
-        setIsModalOpen(false);
-        return;
-      }
-
-      if (cardRef.current?.contains(document.activeElement) || modalRef.current?.contains(document.activeElement)) {
-        if (e.key === "Enter" || e.key === " ") {
-          e.preventDefault();
-          setIsFlipped(!isFlipped);
-        }
-      }
-    };
-
-    document.addEventListener("keydown", handleKeyDown);
-    return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [isFlipped, isModalOpen]);
-
-  const validateContent = () => {
-    const newErrors: { front?: string; back?: string } = {};
-
-    if (editedFront.trim().length < 3) {
-      newErrors.front = "Front content must be at least 3 characters";
-    }
-    if (editedFront.trim().length > 200) {
-      newErrors.front = "Front content must not exceed 200 characters";
-    }
-
-    if (editedBack.trim().length < 3) {
-      newErrors.back = "Back content must be at least 3 characters";
-    }
-    if (editedBack.trim().length > 500) {
-      newErrors.back = "Back content must not exceed 500 characters";
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const handleEditClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setIsEditing(true);
-    setIsFlipped(false);
-    setErrors({});
-  };
-
-  const handleSaveEdit = () => {
-    if (validateContent()) {
-      onEdit({
-        ...flashcard,
-        front: editedFront.trim(),
-        back: editedBack.trim(),
-        source: "ai-edited",
-      });
-      setIsEditing(false);
-    }
-  };
-
-  const handleCancelEdit = () => {
-    setEditedFront(flashcard.front);
-    setEditedBack(flashcard.back);
+  const handleEditSubmit = (data: FlashcardFormData) => {
+    onEdit({
+      ...flashcard,
+      ...data,
+      source: "ai-edited",
+    });
     setIsEditing(false);
-    setErrors({});
   };
 
-  const handleExpandClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setIsModalOpen(true);
+  const handleTouchStart = (e: React.TouchEvent) => {
+    const touch = e.touches[0];
+    setTouchStart({ x: touch.clientX, y: touch.clientY });
   };
 
-  const renderCardContent = (inModal = false) => {
-    const contentClasses = inModal ? "text-lg" : "text-base line-clamp-4";
-    const containerClasses = inModal ? "min-h-[300px]" : "min-h-[200px]";
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (!touchStart) return;
 
-    return (
-      <div
-        ref={inModal ? modalRef : cardRef}
-        className={`relative ${containerClasses} w-full cursor-pointer`}
-        onClick={() => setIsFlipped(!isFlipped)}
-        onKeyDown={(e) => {
-          if (e.key === "Enter" || e.key === " ") {
-            e.preventDefault();
-            setIsFlipped(!isFlipped);
-          }
-        }}
-        role="button"
-        tabIndex={0}
-        aria-label={`Flashcard. Click to flip. Currently showing ${isFlipped ? "answer" : "question"}`}
-      >
-        <div
-          className={`absolute inset-0 p-6 transition-opacity duration-300 ${isFlipped ? "opacity-0" : "opacity-100"}`}
-        >
-          <div className="h-full bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg p-4 flex flex-col">
-            <p className="font-medium text-gray-900 mb-2">Question:</p>
-            <p className={`text-gray-800 flex-grow ${contentClasses}`} data-testid="flashcard-front-content">
-              {flashcard.front}
-            </p>
-            {!inModal && flashcard.front.length > 100 && (
-              <button onClick={handleExpandClick} className="text-sm text-blue-600 hover:text-blue-800 underline mt-2">
-                Show more
-              </button>
-            )}
-            <p className="text-sm text-blue-600 mt-4 italic">Click to see answer</p>
-          </div>
-        </div>
+    const touch = e.changedTouches[0];
+    const deltaX = touch.clientX - touchStart.x;
+    const deltaY = touch.clientY - touchStart.y;
+    const swipeThreshold = 50;
 
-        <div
-          className={`absolute inset-0 p-6 transition-opacity duration-300 ${isFlipped ? "opacity-100" : "opacity-0"}`}
-        >
-          <div className="h-full bg-gradient-to-br from-emerald-50 to-teal-50 rounded-lg p-4 flex flex-col">
-            <p className="font-medium text-gray-900 mb-2">Answer:</p>
-            <p className={`text-gray-800 flex-grow ${contentClasses}`} data-testid="flashcard-back-content">
-              {flashcard.back}
-            </p>
-            {!inModal && flashcard.back.length > 100 && (
-              <button
-                onClick={handleExpandClick}
-                className="text-sm text-emerald-600 hover:text-emerald-800 underline mt-2"
-              >
-                Show more
-              </button>
-            )}
-            <p className="text-sm text-emerald-600 mt-4 italic">Click to see question</p>
-          </div>
-        </div>
-      </div>
-    );
+    // Only handle horizontal swipes if the vertical movement is less than half the horizontal
+    if (Math.abs(deltaY) < Math.abs(deltaX) / 2) {
+      if (deltaX > swipeThreshold && mode === "suggestions") {
+        onAccept(flashcard);
+      } else if (deltaX < -swipeThreshold) {
+        onReject(flashcard);
+      }
+    }
+
+    setTouchStart(null);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      setIsFlipped(!isFlipped);
+    }
   };
 
   if (isEditing) {
-    return (
-      <div className="w-full bg-white rounded-xl shadow-md p-6 space-y-4 animate-fade-in">
-        <div className="space-y-4">
-          <div>
-            <label htmlFor="front" className="block text-sm font-medium text-gray-700 mb-1">
-              Question <span className="text-gray-500">({200 - editedFront.length} characters left)</span>
-            </label>
-            <textarea
-              ref={frontInputRef}
-              id="front"
-              value={editedFront}
-              onChange={(e) => setEditedFront(e.target.value)}
-              className={`w-full min-h-[80px] p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                errors.front ? "border-red-500" : "border-gray-300"
-              }`}
-              placeholder="Enter your question"
-              aria-invalid={!!errors.front}
-              aria-describedby={errors.front ? "front-error" : undefined}
-            />
-            {errors.front && (
-              <p id="front-error" className="mt-1 text-sm text-red-500" role="alert">
-                {errors.front}
-              </p>
-            )}
-          </div>
-          <div>
-            <label htmlFor="back" className="block text-sm font-medium text-gray-700 mb-1">
-              Answer <span className="text-gray-500">({500 - editedBack.length} characters left)</span>
-            </label>
-            <textarea
-              id="back"
-              value={editedBack}
-              onChange={(e) => setEditedBack(e.target.value)}
-              className={`w-full min-h-[120px] p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                errors.back ? "border-red-500" : "border-gray-300"
-              }`}
-              placeholder="Enter the answer"
-              aria-invalid={!!errors.back}
-              aria-describedby={errors.back ? "back-error" : undefined}
-            />
-            {errors.back && (
-              <p id="back-error" className="mt-1 text-sm text-red-500" role="alert">
-                {errors.back}
-              </p>
-            )}
-          </div>
-        </div>
-
-        <div className="flex justify-end space-x-2">
-          <button
-            onClick={handleCancelEdit}
-            className="px-3 py-1 text-sm text-gray-600 hover:bg-gray-50 rounded-md transition-colors"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={handleSaveEdit}
-            className="px-3 py-1 text-sm text-white bg-blue-600 hover:bg-blue-700 rounded-md transition-colors"
-          >
-            Save
-          </button>
-        </div>
-      </div>
-    );
+    return <FlashcardEditForm flashcard={flashcard} onSubmit={handleEditSubmit} onCancel={() => setIsEditing(false)} />;
   }
 
   return (
     <>
       <div className="w-full bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow duration-200">
-        {renderCardContent(false)}
-        <div className="p-4 border-t border-gray-100">
+        <button
+          ref={cardRef}
+          type="button"
+          className="relative min-h-[200px] w-full cursor-pointer touch-manipulation text-left"
+          onClick={() => setIsFlipped(!isFlipped)}
+          onTouchStart={handleTouchStart}
+          onTouchEnd={handleTouchEnd}
+          onKeyDown={handleKeyDown}
+          aria-label={`Flashcard. ${window.matchMedia("(hover: none)").matches ? "Tap" : "Click"} to flip. Currently showing ${
+            isFlipped ? "answer" : "question"
+          }`}
+        >
+          <FlashcardContent
+            isFlipped={isFlipped}
+            content={flashcard.front}
+            type="question"
+            onExpand={() => setIsModalOpen(true)}
+          />
+          <FlashcardContent
+            isFlipped={isFlipped}
+            content={flashcard.back}
+            type="answer"
+            onExpand={() => setIsModalOpen(true)}
+          />
+        </button>
+
+        <div className="p-3 sm:p-4 border-t border-gray-100">
           <div className="flex justify-end space-x-2">
             {mode === "suggestions" ? (
               <>
                 <button
+                  type="button"
                   onClick={(e) => {
                     e.stopPropagation();
                     onReject(flashcard);
                   }}
-                  className="px-3 py-1 text-sm text-red-600 hover:bg-red-50 rounded-md transition-colors"
+                  className="min-w-[80px] min-h-[44px] px-4 py-2 text-sm text-red-600 hover:bg-red-50 rounded-md transition-colors"
                   data-testid="reject-button"
                 >
                   Reject
                 </button>
                 <button
-                  onClick={handleEditClick}
-                  className="px-3 py-1 text-sm text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setIsEditing(true);
+                  }}
+                  className="min-w-[80px] min-h-[44px] px-4 py-2 text-sm text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
                   data-testid="edit-button"
                 >
                   Edit
                 </button>
                 <button
+                  type="button"
                   onClick={(e) => {
                     e.stopPropagation();
                     onAccept(flashcard);
                   }}
-                  className="px-3 py-1 text-sm text-white bg-green-600 hover:bg-green-700 rounded-md transition-colors"
+                  className="min-w-[80px] min-h-[44px] px-4 py-2 text-sm text-white bg-green-600 hover:bg-green-700 rounded-md transition-colors"
                   data-testid="accept-button"
                 >
                   Accept
@@ -269,11 +286,12 @@ export function FlashcardSuggestionCard({
               </>
             ) : (
               <button
+                type="button"
                 onClick={(e) => {
                   e.stopPropagation();
                   onReject(flashcard);
                 }}
-                className="px-3 py-1 text-sm text-red-600 hover:bg-red-50 rounded-md transition-colors"
+                className="min-w-[80px] min-h-[44px] px-4 py-2 text-sm text-red-600 hover:bg-red-50 rounded-md transition-colors"
                 data-testid="remove-button"
               >
                 Remove
@@ -283,23 +301,7 @@ export function FlashcardSuggestionCard({
         </div>
       </div>
 
-      {/* Modal */}
-      {isModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl shadow-2xl p-6 m-4 max-w-3xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-semibold text-gray-900">Flashcard Details</h3>
-              <button onClick={() => setIsModalOpen(false)} className="text-gray-500 hover:text-gray-700">
-                <span className="sr-only">Close</span>
-                <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-            {renderCardContent(true)}
-          </div>
-        </div>
-      )}
+      <FlashcardModal flashcard={flashcard} isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
     </>
   );
 }

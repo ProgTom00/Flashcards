@@ -10,8 +10,8 @@ export class NotificationComponent {
   }
 
   async expectSuccessMessage(message?: string) {
-    // Then wait for notification with a longer timeout
-    await this.notification.waitFor({ state: "visible", timeout: 10000 });
+    // Use a longer timeout since generation can take more than 10 seconds
+    await expect(this.notification).toBeVisible({ timeout: 30000 });
     await expect(this.notification).toHaveClass(/bg-green-100/);
     if (message) {
       await expect(this.notification).toContainText(message);
@@ -19,13 +19,14 @@ export class NotificationComponent {
   }
 
   async expectErrorMessage(message: string) {
-    // Then wait for notification with a longer timeout
-    await this.notification.waitFor({ state: "visible", timeout: 10000 });
+    // Use the same longer timeout for consistency
+    await expect(this.notification).toBeVisible({ timeout: 30000 });
     await expect(this.notification).toHaveClass(/bg-red-100/);
     await expect(this.notification).toContainText(message);
   }
 
   async expectNotificationToDisappear() {
-    await expect(this.notification).toBeHidden({ timeout: 10000 }); // 10s timeout
+    // Keep a shorter timeout for disappearance since that should happen quickly
+    await expect(this.notification).toBeHidden({ timeout: 5000 });
   }
 }

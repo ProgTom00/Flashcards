@@ -22,7 +22,7 @@ export function SuggestionsList({
   }
 
   return (
-    <div className="space-y-6 bg-gradient-to-br from-slate-50 to-white p-6 rounded-xl shadow-sm">
+    <div className="space-y-6 bg-gradient-to-br from-slate-50 to-white p-4 sm:p-6 rounded-xl shadow-sm">
       {mode === "suggestions" && (
         <>
           <h2 className="text-xl font-semibold text-gray-800">Generated Flashcards</h2>
@@ -31,7 +31,7 @@ export function SuggestionsList({
           </p>
         </>
       )}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
         {suggestions.map((flashcard, index) => (
           <div key={`${flashcard.front}-${index}`} className="flex">
             <FlashcardSuggestionCard

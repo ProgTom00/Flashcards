@@ -69,7 +69,7 @@ test.describe("Flashcard Generation Flow", () => {
     await navigationComponent.expectBulkSaveButtonToBeEnabled();
     await navigationComponent.saveBulk();
 
-    // Verify save success later
+    // Verify save success save 1 flashcard
     await notificationComponent.expectSuccessMessage("Successfully saved 1 flashcards");
     await notificationComponent.expectNotificationToDisappear();
 
