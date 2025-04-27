@@ -115,91 +115,103 @@ function GenerateViewContent() {
     <div className="space-y-8" data-testid="generate-view-container">
       {notification && <ToastNotifications message={notification.message} type={notification.type} />}
 
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <TextAreaInput
-            {...register("text")}
-            placeholder="Enter your text here (minimum 1000 characters, maximum 15000 characters)"
-            disabled={isGenerating}
-            data-testid="flashcard-text-input"
-          />
-          {errors.text && (
-            <p className="mt-1 text-sm text-red-500" role="alert">
-              {errors.text.message}
-            </p>
-          )}
-          <p className="mt-1 text-sm text-gray-500">Characters: {textLength} / 15000</p>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* Left Column - Input and Generation */}
+        <div className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="sticky top-4">
+              <TextAreaInput
+                {...register("text")}
+                placeholder="Enter your text here (minimum 1000 characters, maximum 15000 characters)"
+                disabled={isGenerating}
+                data-testid="flashcard-text-input"
+              />
+              {errors.text && (
+                <p className="mt-1 text-sm text-red-500" role="alert">
+                  {errors.text.message}
+                </p>
+              )}
+              {textLength > 0 && (
+                <div className="mt-2 flex justify-between items-center text-sm">
+                  <div className="text-gray-600">Characters: {textLength} / 15000</div>
+                  {textLength < 1000 && <div className="text-yellow-600">Need {1000 - textLength} more characters</div>}
+                </div>
+              )}
+              <div className="mt-4">
+                <GenerateButton
+                  disabled={!isTextValid || isGenerating}
+                  loading={isGenerating}
+                  data-testid="generate-flashcards-button"
+                />
+              </div>
+            </div>
+          </form>
         </div>
-        <div className="flex justify-end">
-          <GenerateButton
-            disabled={!isTextValid || isGenerating}
-            loading={isGenerating}
-            data-testid="generate-flashcards-button"
-          />
-        </div>
-      </form>
 
-      {isGenerating && <Loader data-testid="loading-spinner" />}
-
-      {/* Navigation buttons */}
-      {(suggestions.length > 0 || acceptedFlashcards.length > 0) && (
-        <div className="flex space-x-4 border-b pb-4">
-          <button
-            onClick={() => setShowAccepted(false)}
-            className={`px-4 py-2 rounded-lg transition-colors ${
-              !showAccepted ? "bg-blue-100 text-blue-800 font-medium" : "text-gray-600 hover:bg-gray-100"
-            }`}
-            data-testid="suggestions-tab-button"
-          >
-            Suggestions ({suggestions.length})
-          </button>
-          <button
-            onClick={() => setShowAccepted(true)}
-            className={`px-4 py-2 rounded-lg transition-colors ${
-              showAccepted ? "bg-green-100 text-green-800 font-medium" : "text-gray-600 hover:bg-gray-100"
-            }`}
-            data-testid="accepted-tab-button"
-          >
-            Accepted ({acceptedFlashcards.length})
-          </button>
-        </div>
-      )}
-
-      {/* Show suggestions or accepted flashcards based on state */}
-      {!showAccepted && suggestions.length > 0 && (
-        <div className="space-y-4" data-testid="suggestions-list-container">
-          <SuggestionsList
-            suggestions={suggestions}
-            onAccept={handleAcceptFlashcard}
-            onEdit={handleEditFlashcard}
-            onReject={handleRejectFlashcard}
-            data-testid="suggestions-list"
-          />
-        </div>
-      )}
-
-      {showAccepted && acceptedFlashcards.length > 0 && (
-        <div className="space-y-4" data-testid="accepted-flashcards-container">
-          <div className="flex justify-between items-center">
-            <h2 className="text-xl font-semibold">Accepted Flashcards</h2>
-            <BulkSaveButton
-              flashcards={acceptedFlashcards}
-              onSave={handleBulkSave}
-              disabled={isSaving}
-              loading={isSaving}
-              data-testid="bulk-save-button"
-            />
+        {/* Right Column - Flashcards Management */}
+        <div className="bg-gray-50 rounded-lg p-6">
+          <div className="flex justify-between items-center mb-6">
+            <div className="flex space-x-4">
+              <button
+                onClick={() => setShowAccepted(false)}
+                className={`px-4 py-2 rounded-lg transition-colors ${
+                  !showAccepted ? "bg-blue-100 text-blue-800 font-medium" : "text-gray-600 hover:bg-gray-100"
+                }`}
+                data-testid="suggestions-tab-button"
+              >
+                Suggestions ({suggestions.length})
+              </button>
+              <button
+                onClick={() => setShowAccepted(true)}
+                className={`px-4 py-2 rounded-lg transition-colors ${
+                  showAccepted ? "bg-green-100 text-green-800 font-medium" : "text-gray-600 hover:bg-gray-100"
+                }`}
+                data-testid="accepted-tab-button"
+              >
+                Accepted ({acceptedFlashcards.length})
+              </button>
+            </div>
+            {showAccepted && acceptedFlashcards.length > 0 && (
+              <BulkSaveButton
+                flashcards={acceptedFlashcards}
+                onSave={handleBulkSave}
+                disabled={isSaving}
+                loading={isSaving}
+                data-testid="bulk-save-button"
+              />
+            )}
           </div>
-          <SuggestionsList
-            suggestions={acceptedFlashcards}
-            onAccept={handleAcceptFlashcard}
-            onEdit={handleEditFlashcard}
-            onReject={handleRemoveFromAccepted}
-            mode="accepted"
-            data-testid="accepted-flashcards-list"
-          />
+
+          <div className="overflow-y-auto max-h-[calc(100vh-200px)]">
+            {isGenerating && <Loader data-testid="loading-spinner" />}
+
+            {!showAccepted && suggestions.length > 0 && (
+              <div className="space-y-4" data-testid="suggestions-list-container">
+                <SuggestionsList
+                  suggestions={suggestions}
+                  onAccept={handleAcceptFlashcard}
+                  onEdit={handleEditFlashcard}
+                  onReject={handleRejectFlashcard}
+                  data-testid="suggestions-list"
+                />
+              </div>
+            )}
+
+            {showAccepted && acceptedFlashcards.length > 0 && (
+              <div className="space-y-4" data-testid="accepted-flashcards-container">
+                <SuggestionsList
+                  suggestions={acceptedFlashcards}
+                  onAccept={handleAcceptFlashcard}
+                  onEdit={handleEditFlashcard}
+                  onReject={handleRemoveFromAccepted}
+                  mode="accepted"
+                  data-testid="accepted-flashcards-list"
+                />
+              </div>
+            )}
+          </div>
         </div>
-      )}
+      </div>
     </div>
   );
 }
