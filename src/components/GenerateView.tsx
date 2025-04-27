@@ -10,6 +10,8 @@ import { useGenerateForm } from "./hooks/useGenerateForm";
 import { useFlashcardsAPI } from "./hooks/useFlashcardsAPI";
 import type { GenerateFlashcardsFormData } from "../types/schemas";
 import { QueryProvider } from "./providers/QueryProvider";
+import { Button } from "./ui/button";
+import { ChevronUp, ChevronDown } from "lucide-react";
 
 function GenerateViewContent() {
   const [suggestions, setSuggestions] = useState<FlashcardSuggestionDTO[]>([]);
@@ -17,6 +19,7 @@ function GenerateViewContent() {
   const [notification, setNotification] = useState<{ message: string; type: "success" | "error" } | null>(null);
   const [showAccepted, setShowAccepted] = useState(false);
   const [currentGenerationId, setCurrentGenerationId] = useState<string | null>(null);
+  const [showFlashcards, setShowFlashcards] = useState(true);
 
   const { generateFlashcards, saveFlashcards, isGenerating, isSaving } = useFlashcardsAPI();
 
@@ -25,6 +28,7 @@ function GenerateViewContent() {
     try {
       setNotification(null);
       setShowAccepted(false);
+      setShowFlashcards(true);
 
       const response = await generateFlashcards(data);
       setCurrentGenerationId(response.generation_id);
@@ -111,15 +115,19 @@ function GenerateViewContent() {
     }
   }, [notification]);
 
+  const toggleFlashcardsVisibility = () => {
+    setShowFlashcards(!showFlashcards);
+  };
+
   return (
     <div className="space-y-8" data-testid="generate-view-container">
       {notification && <ToastNotifications message={notification.message} type={notification.type} />}
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <div className="flex flex-col lg:grid lg:grid-cols-2 gap-8">
         {/* Left Column - Input and Generation */}
         <div className="space-y-4">
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="sticky top-4">
+            <div className="sticky top-4 z-10 bg-white p-4 rounded-lg shadow-sm">
               <TextAreaInput
                 {...register("text")}
                 placeholder="Enter your text here (minimum 1000 characters, maximum 15000 characters)"
@@ -149,66 +157,77 @@ function GenerateViewContent() {
         </div>
 
         {/* Right Column - Flashcards Management */}
-        <div className="bg-gray-50 rounded-lg p-6">
-          <div className="flex justify-between items-center mb-6">
-            <div className="flex space-x-4">
-              <button
-                onClick={() => setShowAccepted(false)}
-                className={`px-4 py-2 rounded-lg transition-colors ${
-                  !showAccepted ? "bg-blue-100 text-blue-800 font-medium" : "text-gray-600 hover:bg-gray-100"
-                }`}
-                data-testid="suggestions-tab-button"
-              >
-                Suggestions ({suggestions.length})
-              </button>
-              <button
-                onClick={() => setShowAccepted(true)}
-                className={`px-4 py-2 rounded-lg transition-colors ${
-                  showAccepted ? "bg-green-100 text-green-800 font-medium" : "text-gray-600 hover:bg-gray-100"
-                }`}
-                data-testid="accepted-tab-button"
-              >
-                Accepted ({acceptedFlashcards.length})
-              </button>
+        <div className="bg-gray-50 rounded-lg">
+          {/* Mobile Toggle Button */}
+          <button
+            onClick={toggleFlashcardsVisibility}
+            className="lg:hidden w-full flex items-center justify-between p-4 text-lg font-medium text-gray-700 hover:bg-gray-100 transition-colors rounded-t-lg"
+          >
+            <span>Flashcards</span>
+            {showFlashcards ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
+          </button>
+
+          <div className={`p-6 ${!showFlashcards ? "hidden lg:block" : ""}`}>
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-6 gap-4">
+              <div className="flex flex-wrap gap-4">
+                <button
+                  onClick={() => setShowAccepted(false)}
+                  className={`px-4 py-2 rounded-lg transition-colors min-w-[120px] ${
+                    !showAccepted ? "bg-blue-100 text-blue-800 font-medium" : "text-gray-600 hover:bg-gray-100"
+                  }`}
+                  data-testid="suggestions-tab-button"
+                >
+                  Suggestions ({suggestions.length})
+                </button>
+                <button
+                  onClick={() => setShowAccepted(true)}
+                  className={`px-4 py-2 rounded-lg transition-colors min-w-[120px] ${
+                    showAccepted ? "bg-green-100 text-green-800 font-medium" : "text-gray-600 hover:bg-gray-100"
+                  }`}
+                  data-testid="accepted-tab-button"
+                >
+                  Accepted ({acceptedFlashcards.length})
+                </button>
+              </div>
+              {showAccepted && acceptedFlashcards.length > 0 && (
+                <BulkSaveButton
+                  flashcards={acceptedFlashcards}
+                  onSave={handleBulkSave}
+                  disabled={isSaving}
+                  loading={isSaving}
+                  data-testid="bulk-save-button"
+                />
+              )}
             </div>
-            {showAccepted && acceptedFlashcards.length > 0 && (
-              <BulkSaveButton
-                flashcards={acceptedFlashcards}
-                onSave={handleBulkSave}
-                disabled={isSaving}
-                loading={isSaving}
-                data-testid="bulk-save-button"
-              />
-            )}
-          </div>
 
-          <div className="overflow-y-auto max-h-[calc(100vh-200px)]">
-            {isGenerating && <Loader data-testid="loading-spinner" />}
+            <div className="overflow-y-auto max-h-[calc(100vh-200px)] sm:max-h-[calc(100vh-250px)]">
+              {isGenerating && <Loader data-testid="loading-spinner" />}
 
-            {!showAccepted && suggestions.length > 0 && (
-              <div className="space-y-4" data-testid="suggestions-list-container">
-                <SuggestionsList
-                  suggestions={suggestions}
-                  onAccept={handleAcceptFlashcard}
-                  onEdit={handleEditFlashcard}
-                  onReject={handleRejectFlashcard}
-                  data-testid="suggestions-list"
-                />
-              </div>
-            )}
+              {!showAccepted && suggestions.length > 0 && (
+                <div className="space-y-4" data-testid="suggestions-list-container">
+                  <SuggestionsList
+                    suggestions={suggestions}
+                    onAccept={handleAcceptFlashcard}
+                    onEdit={handleEditFlashcard}
+                    onReject={handleRejectFlashcard}
+                    data-testid="suggestions-list"
+                  />
+                </div>
+              )}
 
-            {showAccepted && acceptedFlashcards.length > 0 && (
-              <div className="space-y-4" data-testid="accepted-flashcards-container">
-                <SuggestionsList
-                  suggestions={acceptedFlashcards}
-                  onAccept={handleAcceptFlashcard}
-                  onEdit={handleEditFlashcard}
-                  onReject={handleRemoveFromAccepted}
-                  mode="accepted"
-                  data-testid="accepted-flashcards-list"
-                />
-              </div>
-            )}
+              {showAccepted && acceptedFlashcards.length > 0 && (
+                <div className="space-y-4" data-testid="accepted-flashcards-container">
+                  <SuggestionsList
+                    suggestions={acceptedFlashcards}
+                    onAccept={handleAcceptFlashcard}
+                    onEdit={handleEditFlashcard}
+                    onReject={handleRemoveFromAccepted}
+                    mode="accepted"
+                    data-testid="accepted-flashcards-list"
+                  />
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
