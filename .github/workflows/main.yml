@@ -1,0 +1,75 @@
+name: CI/CD Pipeline
+
+on:
+  # Trigger na push do main
+  push:
+    branches: [ main ]
+  # Trigger manualny
+  workflow_dispatch:
+
+jobs:
+  test-and-build:
+    runs-on: ubuntu-latest
+    
+    env:
+      NODE_VERSION: '20'
+      # Dodaj tutaj inne zmienne środowiskowe specyficzne dla joba
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Read .nvmrc
+        id: nvm
+        run: echo "NVMRC=$(cat .nvmrc)" >> $GITHUB_OUTPUT
+        continue-on-error: true
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ steps.nvm.outputs.NVMRC || env.NODE_VERSION }}
+          cache: 'npm'
+          
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}
+          
+      - name: Install dependencies
+        run: npm ci
+        
+      - name: Run unit tests
+        run: npm run test
+        env:
+          CI: true
+        
+      - name: Run build
+        run: npm run build
+        env:
+          CI: true
+        
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps
+        
+      - name: Run Playwright tests
+        run: npm run test:e2e
+        env:
+          CI: true
+        
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-${{ github.sha }}
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 14
+            
+      - name: Store build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: production-build-${{ github.sha }}
+          path: dist/
+          retention-days: 14
