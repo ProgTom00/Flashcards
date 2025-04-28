@@ -24,6 +24,7 @@ pnpm-debug.log*
 # jetbrains setting folder
 .idea/
 
+* text=auto eol=lf
 # Testing
 coverage/
 /test-results/

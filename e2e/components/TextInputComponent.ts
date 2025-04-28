@@ -1,4 +1,5 @@
-import { Page, expect, Locator } from "@playwright/test";
+import { expect } from "@playwright/test";
+import type { Page, Locator } from "@playwright/test";
 
 export class TextInputComponent {
   private readonly textInput: Locator;
