@@ -1,9 +1,10 @@
 // OpenRouterService.test.ts
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { OpenRouterService } from "@/lib/openrouter.service";
-import { OpenRouterError } from "@/lib/openrouter.types";
-import { Logger } from "@/lib/logger";
 import type { RequestPayload } from "@/lib/openrouter.types";
+import { OpenRouterError } from "@/lib/openrouter.types";
+
+type ResponseFormatSchema = Record<string, unknown>;
 
 // Mock dla Logger
 vi.mock("@/lib/logger", () => ({
@@ -20,7 +21,6 @@ vi.stubGlobal("fetch", mockFetch);
 
 describe("OpenRouterService", () => {
   let service: OpenRouterService;
-  let logger: Logger;
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -29,7 +29,6 @@ describe("OpenRouterService", () => {
       timeout: 1000,
       maxRetries: 2,
     });
-    logger = new Logger("TestContext");
   });
 
   describe("setSystemMessage", () => {
@@ -113,7 +112,7 @@ describe("OpenRouterService", () => {
 
     it("should throw error for invalid schema format", () => {
       const invalidSchema = "";
-      expect(() => service.setResponseFormat(invalidSchema as unknown as Record<string, unknown>)).toThrow(
+      expect(() => service.setResponseFormat(invalidSchema as unknown as ResponseFormatSchema)).toThrow(
         new OpenRouterError("Invalid JSON schema provided", "INVALID_RESPONSE_FORMAT")
       );
     });
@@ -122,7 +121,7 @@ describe("OpenRouterService", () => {
       const invalidSchema = "not an object";
       const loggerSpy = vi.spyOn(service["logger"], "error");
 
-      expect(() => service.setResponseFormat(invalidSchema as unknown as Record<string, unknown>)).toThrow(
+      expect(() => service.setResponseFormat(invalidSchema as unknown as ResponseFormatSchema)).toThrow(
         new OpenRouterError("Invalid JSON schema provided", "INVALID_RESPONSE_FORMAT")
       );
       expect(loggerSpy).toHaveBeenCalled();

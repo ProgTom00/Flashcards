@@ -23,7 +23,11 @@ function parseCookieHeader(cookieHeader: string): { name: string; value: string 
   });
 }
 
-export const createSupabaseServer = ({ cookies, headers }: { cookies: any; headers: Headers }) => {
+interface CookieStore {
+  set(name: string, value: string, options?: CookieOptions): void;
+}
+
+export const createSupabaseServer = ({ cookies, headers }: { cookies: CookieStore; headers: Headers }) => {
   return createServerClient<Database>(supabaseUrl, supabaseAnonKey, {
     cookies: {
       getAll() {

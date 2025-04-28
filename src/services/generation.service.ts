@@ -3,6 +3,7 @@ import type { FlashcardSuggestionDTO, GenerateFlashcardsResponseDTO } from "@/ty
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/db/database.types";
 import { OpenRouterService } from "@/lib/openrouter.service";
+import { OpenRouterError } from "@/lib/openrouter.types";
 import { z } from "zod";
 import { Logger } from "@/lib/logger";
 
@@ -33,7 +34,7 @@ Return ONLY a JSON array of flashcard objects with 'front' and 'back' and 'sourc
     config?: { apiKey: string }
   ) {
     if (!config?.apiKey) {
-      throw new Error("OpenRouter API key is required");
+      throw new OpenRouterError("OpenRouter API key is required", "CONFIG_ERROR");
     }
 
     this.logger = new Logger("GenerationService");
@@ -68,11 +69,12 @@ Return ONLY a JSON array of flashcard objects with 'front' and 'back' and 'sourc
         generated_count: aiSuggestions.length,
       };
     } catch (error) {
-      this.logger.error("Failed to generate flashcards", error as Error, {
+      const errorObj = error instanceof Error ? error : new Error(String(error));
+      this.logger.error(errorObj, {
         textLength: text.length,
         duration: Date.now() - startTime,
       });
-      await this.logGenerationError(error as Error, text);
+      await this.logGenerationError(errorObj, text);
       throw error;
     }
   }
@@ -102,8 +104,9 @@ Return ONLY a JSON array of flashcard objects with 'front' and 'back' and 'sourc
       .single();
 
     if (generationError) {
-      this.logger.error("Failed to save generation metadata", new Error(generationError.message));
-      throw new Error(`Failed to create generation record: ${generationError.message}`);
+      const error = new Error(`Failed to create generation record: ${generationError.message}`);
+      this.logger.error(error);
+      throw error;
     }
 
     return generation;
@@ -145,8 +148,12 @@ Return ONLY a JSON array of flashcard objects with 'front' and 'back' and 'sourc
       try {
         parsedContent = JSON.parse(response);
       } catch (parseError) {
-        this.logger.error("Failed to parse API response", parseError as Error, { response });
-        throw new Error("Invalid JSON in API response");
+        const error = new Error("Invalid JSON in API response");
+        this.logger.error(error, {
+          response,
+          parseError: parseError instanceof Error ? parseError.message : String(parseError),
+        });
+        throw error;
       }
 
       const flashcardsData = (parsedContent as { flashcards: unknown[] }).flashcards;
@@ -157,7 +164,8 @@ Return ONLY a JSON array of flashcard objects with 'front' and 'back' and 'sourc
         source: "ai-full" as const,
       }));
     } catch (error) {
-      this.logger.error("AI service error", error as Error);
+      const errorObj = error instanceof Error ? error : new Error(String(error));
+      this.logger.error(errorObj);
       throw error;
     }
   }
@@ -171,13 +179,14 @@ Return ONLY a JSON array of flashcard objects with 'front' and 'back' and 'sourc
       await this.supabase.from("generation_logs").insert({
         user_id: this.userId,
         error_message: error.message,
-        error_code: "GENERATION_FAILED",
+        error_code: error instanceof OpenRouterError ? error.code : "UNKNOWN_ERROR",
         source_text_hash: this.generateTextHash(text),
         source_text_length: text.length,
         model: this.model,
       });
     } catch (logError) {
-      this.logger.error("Failed to log generation error", logError as Error);
+      const errorObj = logError instanceof Error ? logError : new Error(String(logError));
+      this.logger.error(errorObj);
     }
   }
 }

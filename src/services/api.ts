@@ -1,4 +1,4 @@
-import type { GenerateFlashcardsFormData, FlashcardFormData } from "../types/schemas";
+import type { GenerateFlashcardsFormData } from "../types/schemas";
 import type { GenerateFlashcardsResponseDTO, CreateFlashcardDto, FlashcardSuggestionDTO } from "../types";
 
 class FlashcardsAPI {

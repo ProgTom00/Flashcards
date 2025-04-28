@@ -26,21 +26,19 @@ export interface RequestPayload {
   model: string;
   response_format?: {
     type: "json_schema";
-    schema: any;
+    json_schema: Record<string, unknown>;
   };
   temperature?: number;
   top_p?: number;
   frequency_penalty?: number;
   presence_penalty?: number;
 }
-/**
- * Response structure from OpenRouter API
- */
+
 export interface ApiResponse {
   choices: {
     message: {
-      content: string;
       role: string;
+      content: string;
     };
   }[];
 }
@@ -72,14 +70,7 @@ export const requestPayloadSchema = z.object({
   response_format: z
     .object({
       type: z.literal("json_schema"),
-      json_schema: z.object({
-        name: z.string(),
-        schema: z.object({
-          type: z.literal("object"),
-          properties: z.record(z.unknown()),
-          required: z.array(z.string()),
-        }),
-      }),
+      json_schema: z.record(z.unknown()),
     })
     .optional(),
   temperature: z.number().min(0).max(2).optional(),
@@ -92,8 +83,8 @@ export const apiResponseSchema = z.object({
   choices: z.array(
     z.object({
       message: z.object({
-        content: z.string(),
         role: z.string(),
+        content: z.string(),
       }),
     })
   ),

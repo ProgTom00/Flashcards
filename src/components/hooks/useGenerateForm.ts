@@ -10,7 +10,7 @@ export const useGenerateForm = ({ onSubmit }: UseGenerateFormProps) => {
   const {
     register,
     handleSubmit,
-    formState: { errors, isValid },
+    formState: { errors },
     watch,
   } = useForm<GenerateFlashcardsFormData>({
     resolver: zodResolver(generateFlashcardsSchema),

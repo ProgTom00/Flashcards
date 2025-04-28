@@ -1,4 +1,13 @@
-import { expect, afterEach, vi } from "vitest";
+import { afterEach, vi } from "vitest";
+import { cleanup } from "@testing-library/react";
+import "@testing-library/jest-dom/vitest";
+
+// Automatically cleanup after each test
+afterEach(() => {
+  cleanup();
+});
+
+import { afterEach, vi } from "vitest";
 import { cleanup } from "@testing-library/react";
 import "@testing-library/jest-dom/vitest";
 
@@ -8,7 +17,7 @@ afterEach(() => {
 });
 
 // Make vi available globally
-(global as any).vi = vi;
+(global as { vi: typeof vi }).vi = vi;
 
 // Mock global browser APIs if needed
 // Example: window.matchMedia
