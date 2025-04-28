@@ -83,7 +83,7 @@ ID: US-004
 Tytuł: Przegląd i zatwierdzanie propozycji fiszek
 Opis: Jako zalogowany użytkownik chcę móc przeglądać wygenerowane fiszki i decydować, które z nich chcę dodać do mojego zestawu, aby zachować tylko przydatne pytania i odpowiedzi.
 Kryteria akceptacji:
-- Lista wygenerowanych fiszek jest wyświetlana pod formularzem generowania.
+- Lista wygenerowanych fiszek jest wyświetlana obok formularza generowania.
 - Przy każdej fiszce znajduje się przycisk pozwalający na jej zatwierdzenie, edycję lub odrzucenie.
 - Po zatwierdzeniu wybranych fiszek użytkownik może kliknąć przycisk zapisu i dodać je do bazy danych.
 
