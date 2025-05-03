@@ -1,9 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { GenerationService } from "@/services/generation.service";
-import { OpenRouterService } from "@/lib/openrouter.service";
-import { Logger } from "@/lib/logger";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/db/database.types";
+import type { FlashcardSuggestionDTO, Generation } from "@/types";
 
 // 1. Najpierw zdefiniujmy mock na poziomie modułu
 const mockSendChatMessage = vi.fn();
@@ -15,10 +14,11 @@ vi.mock("@/lib/openrouter.service", () => ({
     setModel: vi.fn(),
     setResponseFormat: vi.fn(),
     setUserMessage: vi.fn(),
-    sendChatMessage: mockSendChatMessage, // używamy zdefiniowanego mocka
+    sendChatMessage: mockSendChatMessage,
   })),
 }));
 
+// 3. Zaktualizowany mock dla Logger
 vi.mock("@/lib/logger", () => ({
   Logger: vi.fn().mockImplementation(() => ({
     info: vi.fn(),
@@ -104,7 +104,7 @@ describe("GenerationService", () => {
             insert: vi.fn().mockReturnThis(),
             select: vi.fn().mockReturnThis(),
             single: vi.fn().mockResolvedValue(mockResponse),
-          }) as any
+          }) as unknown as SupabaseClient<Database>
       );
 
       // Act
@@ -130,7 +130,7 @@ describe("GenerationService", () => {
             insert: vi.fn().mockReturnThis(),
             select: vi.fn().mockReturnThis(),
             single: vi.fn().mockResolvedValue({ data: null, error: new Error("DB Error") }),
-          }) as any
+          }) as unknown as SupabaseClient<Database>
       );
 
       // Act & Assert
@@ -189,15 +189,36 @@ describe("GenerationService", () => {
         { front: "Q2", back: "A2", source: "ai-full" as const },
       ];
 
-      const mockGenerationMetadata = {
+      const mockGenerationMetadata: Generation = {
         id: "gen-123",
         duration: 1000,
         generated_count: 2,
+        accepted_edited_count: null,
+        accepted_unedited_count: null,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        model: "test-model",
+        source_text_hash: "test-hash",
+        source_text_length: 100,
+        user_id: "test-user-id",
       };
 
-      vi.spyOn(service as any, "callAiService").mockResolvedValue(mockAiFlashcards);
+      vi.spyOn(
+        service as unknown as { callAiService: (text: string) => Promise<FlashcardSuggestionDTO[]> },
+        "callAiService"
+      ).mockResolvedValue(mockAiFlashcards);
 
-      vi.spyOn(service as any, "saveGenerationMetadata").mockResolvedValue(mockGenerationMetadata);
+      vi.spyOn(
+        service as unknown as {
+          saveGenerationMetadata: (data: {
+            sourceText: string;
+            sourceTextHash: string;
+            generatedCount: number;
+            duration: number;
+          }) => Promise<Generation>;
+        },
+        "saveGenerationMetadata"
+      ).mockResolvedValue(mockGenerationMetadata);
 
       // Act
       const result = await service.generateFlashcards(inputText);
@@ -212,7 +233,10 @@ describe("GenerationService", () => {
 
     it("should handle AI service failure", async () => {
       // Arrange
-      vi.spyOn(service as any, "callAiService").mockRejectedValue(new Error("AI Service Failed"));
+      vi.spyOn(
+        service as unknown as { callAiService: (text: string) => Promise<FlashcardSuggestionDTO[]> },
+        "callAiService"
+      ).mockRejectedValue(new Error("AI Service Failed"));
 
       const logErrorSpy = vi.spyOn(service["logger"], "error");
 
@@ -226,9 +250,22 @@ describe("GenerationService", () => {
       // Arrange
       const mockAiFlashcards = [{ front: "Q1", back: "A1", source: "ai-full" as const }];
 
-      vi.spyOn(service as any, "callAiService").mockResolvedValue(mockAiFlashcards);
+      vi.spyOn(
+        service as unknown as { callAiService: (text: string) => Promise<FlashcardSuggestionDTO[]> },
+        "callAiService"
+      ).mockResolvedValue(mockAiFlashcards);
 
-      vi.spyOn(service as any, "saveGenerationMetadata").mockRejectedValue(new Error("Database Error"));
+      vi.spyOn(
+        service as unknown as {
+          saveGenerationMetadata: (data: {
+            sourceText: string;
+            sourceTextHash: string;
+            generatedCount: number;
+            duration: number;
+          }) => Promise<Generation>;
+        },
+        "saveGenerationMetadata"
+      ).mockRejectedValue(new Error("Database Error"));
 
       // Act & Assert
       await expect(service.generateFlashcards("test")).rejects.toThrow("Database Error");

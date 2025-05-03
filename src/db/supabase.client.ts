@@ -1,13 +1,12 @@
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import type { Database } from "./database.types";
 
-const isTestEnvironment = process.env.NODE_ENV === "test";
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_PUBLIC_KEY;
 
-const supabaseUrl = isTestEnvironment ? import.meta.env.NEXT_PUBLIC_SUPABASE_URL : import.meta.env.SUPABASE_URL;
-
-const supabaseAnonKey = isTestEnvironment
-  ? import.meta.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-  : import.meta.env.SUPABASE_KEY;
+if (!supabaseUrl || !supabaseKey) {
+  throw new Error("Missing required Supabase environment variables");
+}
 
 export const cookieOptions: CookieOptions = {
   path: "/",
@@ -23,8 +22,12 @@ function parseCookieHeader(cookieHeader: string): { name: string; value: string 
   });
 }
 
-export const createSupabaseServer = ({ cookies, headers }: { cookies: any; headers: Headers }) => {
-  return createServerClient<Database>(supabaseUrl, supabaseAnonKey, {
+interface CookieStore {
+  set(name: string, value: string, options?: CookieOptions): void;
+}
+
+export const createSupabaseServer = ({ cookies, headers }: { cookies: CookieStore; headers: Headers }) => {
+  return createServerClient<Database>(supabaseUrl, supabaseKey, {
     cookies: {
       getAll() {
         return parseCookieHeader(headers.get("Cookie") ?? "");

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import type { UseFormRegisterReturn } from "react-hook-form";
 
 interface TextAreaInputProps extends UseFormRegisterReturn {
@@ -6,7 +6,6 @@ interface TextAreaInputProps extends UseFormRegisterReturn {
   disabled?: boolean;
   value?: string;
   maxLength?: number;
-  minLength?: number;
   error?: string;
   onSave?: (text: string) => void;
 }
@@ -20,7 +19,6 @@ export function TextAreaInput({
   disabled,
   value,
   maxLength = 15000,
-  minLength = 1000,
   error,
   onSave,
 }: TextAreaInputProps) {

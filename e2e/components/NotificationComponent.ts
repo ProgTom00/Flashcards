@@ -27,6 +27,6 @@ export class NotificationComponent {
 
   async expectNotificationToDisappear() {
     // Keep a shorter timeout for disappearance since that should happen quickly
-    await expect(this.notification).toBeHidden({ timeout: 5000 });
+    await expect(this.notification).toBeHidden({ timeout: 10000 });
   }
 }

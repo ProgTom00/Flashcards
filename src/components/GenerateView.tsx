@@ -10,7 +10,6 @@ import { useGenerateForm } from "./hooks/useGenerateForm";
 import { useFlashcardsAPI } from "./hooks/useFlashcardsAPI";
 import type { GenerateFlashcardsFormData } from "../types/schemas";
 import { QueryProvider } from "./providers/QueryProvider";
-import { Button } from "./ui/button";
 import { ChevronUp, ChevronDown } from "lucide-react";
 
 function GenerateViewContent() {

@@ -86,16 +86,23 @@ export class OpenRouterService {
    */
   public setResponseFormat(schema: Record<string, unknown>): void {
     try {
-      // Validate that the schema is a valid JSON schema
       if (typeof schema !== "object" || schema === null) {
         throw new OpenRouterError("Schema must be an object", "INVALID_RESPONSE_FORMAT");
       }
 
       this.currentResponseFormat = schema;
     } catch (error) {
-      this.logger.error(error as Error, { schemaKeys: Object.keys(schema) });
+      if (error instanceof Error) {
+        this.logger.error("Failed to set response format", error);
+      } else {
+        this.logger.error("Failed to set response format", new Error(String(error)));
+      }
       throw new OpenRouterError("Invalid JSON schema provided", "INVALID_RESPONSE_FORMAT");
     }
+  }
+
+  private isValidPropertiesObject(obj: unknown): obj is Record<string, unknown> {
+    return typeof obj === "object" && obj !== null;
   }
 
   /**
@@ -129,10 +136,8 @@ export class OpenRouterService {
    */
   public async sendChatMessage(): Promise<string> {
     try {
-      // Build and validate the request payload
       const payload = this.buildRequestPayload();
 
-      // Validate payload
       try {
         requestPayloadSchema.parse(payload);
       } catch (validationError) {
@@ -150,10 +155,8 @@ export class OpenRouterService {
         throw validationError;
       }
 
-      // Execute the request
       const response = await this.executeRequest(payload);
 
-      // Validate the response
       try {
         apiResponseSchema.parse(response);
       } catch (validationError) {
@@ -173,12 +176,10 @@ export class OpenRouterService {
         throw validationError;
       }
 
-      // Check if we have any choices in the response
       if (!response.choices.length) {
         throw new OpenRouterError("No response received from the model", "EMPTY_RESPONSE");
       }
 
-      // Return the first choice's content
       return response.choices[0].message.content;
     } catch (error) {
       // Log the error with relevant metadata
@@ -201,18 +202,15 @@ export class OpenRouterService {
         },
       });
 
-      // Handle validation errors
       if (error instanceof z.ZodError) {
         throw new OpenRouterError(`Validation error: ${error.errors[0].message}`, "VALIDATION_ERROR");
       }
 
-      // Re-throw OpenRouterError instances
       if (error instanceof OpenRouterError) {
         throw error;
       }
 
-      // Handle unexpected errors
-      throw new OpenRouterError("An unexpected error occurred", "UNEXPECTED_ERROR");
+      throw new OpenRouterError(errorMessage, "UNEXPECTED_ERROR");
     }
   }
 
