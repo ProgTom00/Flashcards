@@ -2,8 +2,8 @@ import { test as teardown } from "@playwright/test";
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "../src/db/database.types";
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_PUBLIC_KEY;
 const TEST_USER_ID = process.env.E2E_USERNAME_ID as string;
 const E2E_USERNAME = process.env.E2E_USERNAME;
 const E2E_PASSWORD = process.env.E2E_PASSWORD;
