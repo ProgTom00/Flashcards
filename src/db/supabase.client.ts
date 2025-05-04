@@ -5,7 +5,7 @@ const supabaseUrl = import.meta.env.SUPABASE_URL;
 const supabaseKey = import.meta.env.SUPABASE_PUBLIC_KEY;
 
 if (!supabaseUrl || !supabaseKey) {
-  throw new Error("Missing required Supabase environment variables");
+  throw new Error("Missing required Supabase environment variables. Check your .env file.");
 }
 
 export const cookieOptions: CookieOptions = {
