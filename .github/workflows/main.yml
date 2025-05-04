@@ -4,6 +4,9 @@ on:
   # Trigger na push do main
   push:
     branches: [ main ]
+  # Trigger for pull requests
+  pull_request:
+    branches: [ main ]
   # Trigger manualny
   workflow_dispatch:
 
@@ -94,7 +97,7 @@ jobs:
   status-comment:
     name: Post Status Comment
     needs: [deploy]
-    if: always()
+    if: always() && (github.event_name == 'pull_request' || github.event_name == 'push')
     runs-on: ubuntu-latest
     steps:
       - name: Check workflow status
@@ -108,19 +111,23 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: `✅ **Deployment successful!**
+            try {
+              await github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: `✅ **Deployment successful!**
 
-              - ✓ Linting: Passed
-              - ✓ Unit Tests: Passed
-              - ✓ Deployment: Completed
-              
-              The application has been successfully deployed to Cloudflare Pages.
-              `
-            })
+                - ✓ Linting: Passed
+                - ✓ Unit Tests: Passed
+                - ✓ Deployment: Completed
+                
+                The application has been successfully deployed to Cloudflare Pages.
+                `
+              });
+            } catch (error) {
+              console.log('Failed to create comment:', error);
+            }
 
       - name: Create failure comment
         if: ${{ steps.check.outputs.status != 'success' }}
@@ -128,12 +135,16 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: `⚠️ **Deployment failed!**
+            try {
+              await github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: `⚠️ **Deployment failed!**
 
-              Please check the workflow logs for more details.
-              `
-            })
+                Please check the workflow logs for more details.
+                `
+              });
+            } catch (error) {
+              console.log('Failed to create comment:', error);
+            }

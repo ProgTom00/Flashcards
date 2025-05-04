@@ -2,6 +2,7 @@ import { z } from "zod";
 import type { GenerateFlashcardsCommand } from "@/types";
 import type { APIRoute } from "astro";
 import { GenerationService } from "@/services/generation.service";
+import { OPENROUTER_API_KEY } from "astro:env/server";
 
 export const prerender = false;
 
@@ -49,13 +50,12 @@ export const POST: APIRoute = async ({ request, locals }) => {
     const { text } = validationResult.data;
 
     // Get API key from environment variables
-    const openRouterApiKey = import.meta.env.OPENROUTER_API_KEY;
-    if (!openRouterApiKey) {
+    if (!OPENROUTER_API_KEY) {
       throw new Error("OPENROUTER_API_KEY environment variable is not set");
     }
 
     const generationService = new GenerationService(locals.supabase, locals.user.id, {
-      apiKey: openRouterApiKey,
+      apiKey: OPENROUTER_API_KEY,
     });
 
     const result = await generationService.generateFlashcards(text);
