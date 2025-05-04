@@ -1,4 +1,3 @@
-import { createHash } from "crypto";
 import type { FlashcardSuggestionDTO, GenerateFlashcardsResponseDTO } from "@/types";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/db/database.types";
@@ -55,7 +54,7 @@ Return ONLY a JSON array of flashcard objects with 'front' and 'back' and 'sourc
       this.logger.info("AI suggestions generated", { count: aiSuggestions.length });
 
       // 2. Create generation record in database
-      const sourceTextHash = this.generateTextHash(text);
+      const sourceTextHash = await this.generateTextHash(text);
       const generationMetadata = await this.saveGenerationMetadata({
         sourceText: text,
         sourceTextHash,
@@ -170,8 +169,12 @@ Return ONLY a JSON array of flashcard objects with 'front' and 'back' and 'sourc
     }
   }
 
-  private generateTextHash(text: string): string {
-    return createHash("md5").update(text).digest("hex");
+  private async generateTextHash(text: string): Promise<string> {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(text);
+    const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
   }
 
   private async logGenerationError(error: Error, text: string): Promise<void> {
@@ -180,7 +183,7 @@ Return ONLY a JSON array of flashcard objects with 'front' and 'back' and 'sourc
         user_id: this.userId,
         error_message: error.message,
         error_code: error instanceof OpenRouterError ? error.code : "UNKNOWN_ERROR",
-        source_text_hash: this.generateTextHash(text),
+        source_text_hash: await this.generateTextHash(text),
         source_text_length: text.length,
         model: this.model,
       });
