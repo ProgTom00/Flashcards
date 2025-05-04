@@ -3,6 +3,7 @@ import { GenerationService } from "@/services/generation.service";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/db/database.types";
 import type { FlashcardSuggestionDTO, Generation } from "@/types";
+import { OpenRouterError } from "@/lib/openrouter.types";
 
 // 1. Najpierw zdefiniujmy mock na poziomie modułu
 const mockSendChatMessage = vi.fn();
@@ -47,39 +48,41 @@ describe("GenerationService", () => {
   });
 
   describe("generateTextHash", () => {
-    it("should generate consistent hash for the same input", () => {
+    it("should generate consistent hash for the same input", async () => {
       // Arrange
       const text = "sample text";
 
       // Act
-      const hash1 = service["generateTextHash"](text);
-      const hash2 = service["generateTextHash"](text);
+      const hash1 = await service["generateTextHash"](text);
+      const hash2 = await service["generateTextHash"](text);
 
       // Assert
       expect(hash1).toBe(hash2);
-      expect(hash1).toMatchInlineSnapshot(`"70ee1738b6b21e2c8a43f3a5ab0eee71"`); // Vitest will fill this automatically
+      expect(hash1).toHaveLength(64); // SHA-256 hash length in hex
     });
 
-    it("should generate different hashes for different inputs", () => {
+    it("should generate different hashes for different inputs", async () => {
       // Arrange
       const text1 = "sample text 1";
       const text2 = "sample text 2";
 
       // Act
-      const hash1 = service["generateTextHash"](text1);
-      const hash2 = service["generateTextHash"](text2);
+      const hash1 = await service["generateTextHash"](text1);
+      const hash2 = await service["generateTextHash"](text2);
 
       // Assert
       expect(hash1).not.toBe(hash2);
+      expect(hash1).toHaveLength(64);
+      expect(hash2).toHaveLength(64);
     });
 
-    it("should handle empty string input", () => {
+    it("should handle empty string input", async () => {
       // Arrange & Act
-      const hash = service["generateTextHash"]("");
+      const hash = await service["generateTextHash"]("");
 
       // Assert
       expect(hash).toBeTruthy();
-      expect(hash).toHaveLength(32); // MD5 hash length
+      expect(hash).toHaveLength(64); // SHA-256 hash length in hex
     });
   });
 
@@ -148,7 +151,6 @@ describe("GenerationService", () => {
         ],
       };
 
-      // Używamy zdefiniowanego mocka bezpośrednio
       mockSendChatMessage.mockResolvedValueOnce(JSON.stringify(mockAiResponse));
 
       // Act
@@ -165,10 +167,11 @@ describe("GenerationService", () => {
 
     it("should handle AI service errors", async () => {
       // Arrange
-      mockSendChatMessage.mockRejectedValueOnce(new Error("AI Service Error"));
+      const aiError = new OpenRouterError("AI Service Error", "SERVICE_ERROR");
+      mockSendChatMessage.mockRejectedValueOnce(aiError);
 
       // Act & Assert
-      await expect(service["callAiService"]("test")).rejects.toThrow("AI Service Error");
+      await expect(service["callAiService"]("test")).rejects.toThrow(aiError);
     });
 
     it("should handle invalid JSON response", async () => {
@@ -177,6 +180,20 @@ describe("GenerationService", () => {
 
       // Act & Assert
       await expect(service["callAiService"]("test")).rejects.toThrow("Invalid JSON in API response");
+    });
+
+    it("should validate response format against schema", async () => {
+      // Arrange
+      const invalidResponse = {
+        flashcards: [
+          { front: "Question 1" }, // missing 'back' field
+        ],
+      };
+
+      mockSendChatMessage.mockResolvedValueOnce(JSON.stringify(invalidResponse));
+
+      // Act & Assert
+      await expect(service["callAiService"]("test")).rejects.toThrow();
     });
   });
 
@@ -197,7 +214,7 @@ describe("GenerationService", () => {
         accepted_unedited_count: null,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
-        model: "test-model",
+        model: "openai/gpt-4o-mini", // Updated model name
         source_text_hash: "test-hash",
         source_text_length: 100,
         user_id: "test-user-id",
@@ -231,24 +248,30 @@ describe("GenerationService", () => {
       });
     });
 
-    it("should handle AI service failure", async () => {
+    it("should handle AI service failure and log error", async () => {
       // Arrange
+      const aiError = new OpenRouterError("AI Service Failed", "SERVICE_ERROR");
       vi.spyOn(
         service as unknown as { callAiService: (text: string) => Promise<FlashcardSuggestionDTO[]> },
         "callAiService"
-      ).mockRejectedValue(new Error("AI Service Failed"));
+      ).mockRejectedValue(aiError);
 
       const logErrorSpy = vi.spyOn(service["logger"], "error");
+      const logGenerationErrorSpy = vi.spyOn(
+        service as unknown as { logGenerationError: (error: Error, text: string) => Promise<void> },
+        "logGenerationError"
+      );
 
       // Act & Assert
-      await expect(service.generateFlashcards("test")).rejects.toThrow("AI Service Failed");
-
+      await expect(service.generateFlashcards("test")).rejects.toThrow(aiError);
       expect(logErrorSpy).toHaveBeenCalled();
+      expect(logGenerationErrorSpy).toHaveBeenCalledWith(aiError, "test");
     });
 
     it("should handle metadata saving failure", async () => {
       // Arrange
       const mockAiFlashcards = [{ front: "Q1", back: "A1", source: "ai-full" as const }];
+      const dbError = new Error("Database Error");
 
       vi.spyOn(
         service as unknown as { callAiService: (text: string) => Promise<FlashcardSuggestionDTO[]> },
@@ -265,10 +288,18 @@ describe("GenerationService", () => {
           }) => Promise<Generation>;
         },
         "saveGenerationMetadata"
-      ).mockRejectedValue(new Error("Database Error"));
+      ).mockRejectedValue(dbError);
+
+      const logErrorSpy = vi.spyOn(service["logger"], "error");
+      const logGenerationErrorSpy = vi.spyOn(
+        service as unknown as { logGenerationError: (error: Error, text: string) => Promise<void> },
+        "logGenerationError"
+      );
 
       // Act & Assert
-      await expect(service.generateFlashcards("test")).rejects.toThrow("Database Error");
+      await expect(service.generateFlashcards("test")).rejects.toThrow(dbError);
+      expect(logErrorSpy).toHaveBeenCalled();
+      expect(logGenerationErrorSpy).toHaveBeenCalledWith(dbError, "test");
     });
   });
 });
