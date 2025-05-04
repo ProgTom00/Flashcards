@@ -31,7 +31,7 @@ The app aims to reduce the time and effort required to create high-quality flash
 - **Backend:** Supabase (PostgreSQL, authentication, and backend-as-a-service)
 - **AI Integration:** Openrouter.ai for accessing multiple LLM models (OpenAI, Anthropic, Google, etc.)
 - **Testing:** Jest, React Testing Library, Vitest, @astro/testing for unit tests; Playwright for E2E tests
-- **CI/CD & Hosting:** GitHub Actions for CI/CD pipelines and DigitalOcean for hosting via Docker
+- **CI/CD & Hosting:** GitHub Actions for CI/CD pipelines and Cloudflare Pages for hosting
 
 ## Getting Started Locally
 ### Prerequisites
@@ -44,7 +44,6 @@ The app aims to reduce the time and effort required to create high-quality flash
 1.  **Clone the repository:**
     ```bash
     git clone https://github.com/ProgTom00/Flashcards.git
-    cd 10x-cards
     ```
 
 2.  **Install dependencies:**
