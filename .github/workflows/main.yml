@@ -54,6 +54,12 @@ jobs:
     permissions:
       contents: read
       deployments: write
+    environment:
+      name: production
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_PUBLIC_KEY: ${{ secrets.SUPABASE_PUBLIC_KEY }}
+      OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}  
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
