@@ -1,4 +1,4 @@
-name: CI/CD Pipeline
+name: Deploy to Cloudflare Pages
 
 on:
   # Trigger na push do main
@@ -8,53 +8,126 @@ on:
   workflow_dispatch:
 
 jobs:
-  test-and-build:
+  lint:
+    name: Lint
     runs-on: ubuntu-latest
-    
-    env:
-      NODE_VERSION: '20'
-      # Dodaj tutaj inne zmienne środowiskowe specyficzne dla joba
-    
     steps:
-      - name: Checkout repository
+      - name: Checkout code
         uses: actions/checkout@v4
-      
-      - name: Read .nvmrc
-        id: nvm
-        run: echo "NVMRC=$(cat .nvmrc)" >> $GITHUB_OUTPUT
-        continue-on-error: true
-      
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: ${{ steps.nvm.outputs.NVMRC || env.NODE_VERSION }}
+          node-version: 20
           cache: 'npm'
-          
+
       - name: Install dependencies
         run: npm ci
-        
-      - name: Run unit tests
+
+      - name: Run linting
+        run: npm run lint
+
+  unit-test:
+    name: Unit Tests
+    needs: lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run unit tests with coverage
         run: npm run test
-        env:
-          CI: true
-        
-      - name: Run build
+
+  deploy:
+    name: Deploy to Cloudflare Pages
+    needs: [lint, unit-test]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      deployments: write
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_PUBLIC_KEY: ${{ secrets.SUPABASE_PUBLIC_KEY }}
+      OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build project
         run: npm run build
-        env:
-          CI: true
-        
-      - name: Upload test results
-        if: always()
-        uses: actions/upload-artifact@v4
+
+      - name: Deploy to Cloudflare Pages
+        uses: cloudflare/pages-action@v1
         with:
-          name: test-results-${{ github.sha }}
-          path: |
-            test-results/
-          retention-days: 14
-            
-      - name: Store build artifacts
-        uses: actions/upload-artifact@v4
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          projectName: flashcards
+          directory: dist
+          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
+          branch: main
+          wranglerVersion: '3'
+
+  status-comment:
+    name: Post Status Comment
+    needs: [deploy]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check workflow status
+        id: check
+        if: ${{ needs.deploy.result == 'success' }}
+        run: echo "status=success" >> $GITHUB_OUTPUT
+
+      - name: Create success comment
+        if: ${{ steps.check.outputs.status == 'success' }}
+        uses: actions/github-script@v7
         with:
-          name: production-build-${{ github.sha }}
-          path: dist/
-          retention-days: 14
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `✅ **Deployment successful!**
+
+              - ✓ Linting: Passed
+              - ✓ Unit Tests: Passed
+              - ✓ Deployment: Completed
+              
+              The application has been successfully deployed to Cloudflare Pages.
+              `
+            })
+
+      - name: Create failure comment
+        if: ${{ steps.check.outputs.status != 'success' }}
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `⚠️ **Deployment failed!**
+
+              Please check the workflow logs for more details.
+              `
+            })
