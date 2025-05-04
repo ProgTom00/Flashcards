@@ -1,10 +1,8 @@
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import type { Database } from "./database.types";
+import { SUPABASE_URL, SUPABASE_PUBLIC_KEY } from "astro:env/server";
 
-const supabaseUrl = import.meta.env.SUPABASE_URL;
-const supabaseKey = import.meta.env.SUPABASE_PUBLIC_KEY;
-
-if (!supabaseUrl || !supabaseKey) {
+if (!SUPABASE_URL || !SUPABASE_PUBLIC_KEY) {
   throw new Error("Missing required Supabase environment variables. Check your .env file.");
 }
 
@@ -27,7 +25,7 @@ interface CookieStore {
 }
 
 export const createSupabaseServer = ({ cookies, headers }: { cookies: CookieStore; headers: Headers }) => {
-  return createServerClient<Database>(supabaseUrl, supabaseKey, {
+  return createServerClient<Database>(SUPABASE_URL, SUPABASE_PUBLIC_KEY, {
     cookies: {
       getAll() {
         return parseCookieHeader(headers.get("Cookie") ?? "");
